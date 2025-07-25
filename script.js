@@ -110,20 +110,32 @@ function extractInfo(rawText, ocrLines = []) {
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
 
   // ----- Patterns based on rules provided -----
-  // Pick the most prominent OCR line if bounding boxes are available
+  // Pick store name using multiple heuristics
   let storeName = '';
   if (ocrLines.length) {
-    let maxArea = 0;
+    // 1) Highest text line (by bbox height -> font size)
+    let maxHeight = 0;
     ocrLines.forEach(l => {
-      const { bbox } = l;
-      const area = (bbox.x1 - bbox.x0) * (bbox.y1 - bbox.y0);
-      if (area > maxArea) {
-        maxArea = area;
+      const h = l.bbox ? (l.bbox.y1 - l.bbox.y0) : 0;
+      if (h > maxHeight) {
+        maxHeight = h;
         storeName = l.text.trim();
       }
     });
   }
+
+  // 2) Fallback: first line that is mostly uppercase (likely a sign like "SCAN ME")
+  if (!storeName) {
+    const upperCandidate = lines.find(l => {
+      const letters = l.replace(/[^A-Za-z]/g, '');
+      return letters.length >= 3 && letters === letters.toUpperCase();
+    });
+    if (upperCandidate) storeName = upperCandidate;
+  }
+
+  // 3) Ultimate fallback: first line
   if (!storeName) storeName = lines[0] || '';
+
   storeName = correctStoreName(storeName);
 
   // Unit number must be in the form #XX-XXX
