@@ -2,6 +2,8 @@
 const video = document.getElementById('camera');
 const statusDiv = document.getElementById('status');
 const resultsDiv = document.getElementById('results');
+const progressBar = document.getElementById('progressBar');
+const progressFill = document.getElementById('progressFill');
 
 // ----------- Dictionary + spell-correction setup -----------
 let englishWords = [];
@@ -63,6 +65,8 @@ document.getElementById('scanBtn').addEventListener('click', async () => {
 
   statusDiv.textContent = 'Scanning…';
   resultsDiv.textContent = '';
+  progressBar.style.display = 'block';
+  progressFill.style.width = '0%';
 
   // Capture current frame
   const canvas = document.createElement('canvas');
@@ -78,7 +82,9 @@ document.getElementById('scanBtn').addEventListener('click', async () => {
   const result = await Tesseract.recognize(canvas, 'eng', {
     logger: m => {
       if (m.progress !== undefined) {
-        statusDiv.textContent = `Scanning… ${Math.floor(m.progress * 100)}%`;
+        const percent = Math.floor(m.progress * 100);
+        statusDiv.textContent = `Scanning… ${percent}%`;
+        progressFill.style.width = percent + '%';
       }
     },
     tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789:#&-.',
@@ -93,6 +99,7 @@ document.getElementById('scanBtn').addEventListener('click', async () => {
   const info = extractInfo(text, lines);
   resultsDiv.textContent = JSON.stringify(info, null, 2);
   statusDiv.textContent = '';
+  progressBar.style.display = 'none';
 });
 
 // Extract structured information from raw OCR text
