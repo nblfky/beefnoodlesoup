@@ -71,16 +71,8 @@ document.getElementById('scanBtn').addEventListener('click', async () => {
   const ctx = canvas.getContext('2d');
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-  // Simple contrast enhancement to aid OCR
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const dataArr = imageData.data;
-  for (let i = 0; i < dataArr.length; i += 4) {
-    // convert to grayscale
-    const avg = (dataArr[i] + dataArr[i + 1] + dataArr[i + 2]) / 3;
-    const contrasted = avg > 128 ? 255 : 0; // simple threshold
-    dataArr[i] = dataArr[i + 1] = dataArr[i + 2] = contrasted;
-  }
-  ctx.putImageData(imageData, 0, 0);
+  // (Optional) Image preprocessing has been disabled as aggressive thresholding
+  // reduced accuracy on some signs. Keeping original frame for OCR.
 
   // Run OCR with additional parameters for better accuracy
   const result = await Tesseract.recognize(canvas, 'eng', {
@@ -113,18 +105,22 @@ function extractInfo(rawText, ocrLines = []) {
   // Pick store name using multiple heuristics
   let storeName = '';
   if (ocrLines.length) {
-    // 1) Highest text line (by bbox height -> font size)
-    let maxHeight = 0;
-    ocrLines.forEach(l => {
-      const h = l.bbox ? (l.bbox.y1 - l.bbox.y0) : 0;
-      if (h > maxHeight) {
-        maxHeight = h;
-        storeName = l.text.trim();
-      }
+    // Step 1: Filter lines with mostly letters (reduce gibberish)
+    const letterLines = ocrLines.filter(l => {
+      const txt = l.text.trim();
+      const letters = txt.replace(/[^A-Za-z]/g, '');
+      const ratio = letters.length / (txt.length || 1);
+      return letters.length >= 3 && ratio > 0.6; // at least 60% letters
     });
+
+    // Step 2: Choose line with highest confidence ( then longest length )
+    letterLines.sort((a, b) => (b.confidence || b.conf || 0) - (a.confidence || a.conf || 0));
+    if (letterLines.length) {
+      storeName = letterLines[0].text.trim();
+    }
   }
 
-  // 2) Fallback: first line that is mostly uppercase (likely a sign like "SCAN ME")
+  // 2) Fallback: first line that is mostly uppercase (e.g., "SCAN ME")
   if (!storeName) {
     const upperCandidate = lines.find(l => {
       const letters = l.replace(/[^A-Za-z]/g, '');
