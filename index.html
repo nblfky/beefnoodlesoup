@@ -67,6 +67,21 @@
     }
     .muted { color:#666; font-size:0.85rem; }
 
+    .toolbar {
+      display:flex;
+      gap:0.5rem;
+      margin-bottom:0.6rem;
+    }
+    .btn {
+      padding:0.4rem 0.9rem;
+      font-size:0.8rem;
+      border:none;
+      border-radius:var(--border-radius);
+      background:var(--primary);
+      color:#fff;
+    }
+    .btn:active { opacity:0.85; }
+
     table { width:100%; border-collapse: collapse; margin-top:0.6rem; }
     th, td { border-bottom:1px solid #eee; padding:0.45rem 0.3rem; font-size:0.85rem; }
     th { text-align:left; color:#555; font-weight:600; }
@@ -82,6 +97,10 @@
       <button id="scanBtn" class="scan-btn">Scan</button>
     </div>
     <div class="card">
+      <div class="toolbar">
+        <button id="exportBtn" class="btn">Export CSV</button>
+        <button id="clearBtn" class="btn">Clear</button>
+      </div>
       <div id="status" class="muted"></div>
       <table id="resultsTable">
         <thead>
