@@ -34,6 +34,38 @@ function renderTable() {
   });
 }
 
+// After renderTable definition add event listeners
+// --- Toolbar actions ---
+document.getElementById('clearBtn').addEventListener('click', () => {
+  if (confirm('Clear all saved scans?')) {
+    scans = [];
+    saveScans();
+    renderTable();
+  }
+});
+
+document.getElementById('exportBtn').addEventListener('click', () => {
+  if (!scans.length) {
+    alert('No data to export');
+    return;
+  }
+  const headers = ['Store Name','Unit','Opening Hours','Phone','Website','Type'];
+  const csvRows = [headers.join(',')];
+  scans.forEach(s => {
+    const row = [s.storeName, s.unitNumber, s.openingHours, s.phone, s.website, s.businessType]
+      .map(v => '"' + (v || '').replace(/"/g,'""') + '"').join(',');
+    csvRows.push(row);
+  });
+  const blob = new Blob([csvRows.join('\n')], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'storefront_scans.csv';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 0);
+});
+
 // ----------- Dictionary + spell-correction setup -----------
 let englishWords = [];
 async function loadDictionary() {
