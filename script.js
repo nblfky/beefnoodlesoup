@@ -41,6 +41,9 @@ document.getElementById('clearBtn').addEventListener('click', () => {
     scans = [];
     saveScans();
     renderTable();
+    if (video && video.srcObject) {
+      video.play().catch(()=>{});
+    }
   }
 });
 
