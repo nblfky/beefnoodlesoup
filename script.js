@@ -35,14 +35,18 @@ document.getElementById('scanBtn').addEventListener('click', async () => {
   const ctx = canvas.getContext('2d');
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-  // Run OCR
-  const { data: { text } } = await Tesseract.recognize(canvas, 'eng', {
+  // Run OCR with additional parameters for better accuracy
+  const { data: { text, confidence } } = await Tesseract.recognize(canvas, 'eng', {
     logger: m => {
       if (m.progress !== undefined) {
         statusDiv.textContent = `Scanning… ${Math.floor(m.progress * 100)}%`;
       }
-    }
+    },
+    tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789:#&-.',
+    tessedit_pageseg_mode: 6 // Assume a single uniform block of text
   });
+
+  console.log('OCR confidence', confidence);
 
   statusDiv.textContent = 'Processing…';
 
@@ -57,18 +61,27 @@ function extractInfo(rawText) {
   const text = rawText.replace(/\n+/g, '\n').trim();
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
 
-  // Simple heuristics — these can be improved!
-  const storeName = lines[0] || '';
-  const unitNumber = lines.find(l => /#?\d{1,3}-\d{1,4}/.test(l)) || '';
+  // ----- Patterns based on rules provided -----
+  let storeName = lines[0] || '';
 
-  const phoneMatch = text.match(/(\+?\d[\d\s\-]{6,}\d)/);
-  const phone = phoneMatch ? phoneMatch[0] : '';
+  // Unit number must be in the form #XX-XXX
+  const unitMatch = text.match(/#\d{2}-\d{3}/);
+  let unitNumber = unitMatch ? unitMatch[0] : '';
 
-  const websiteMatch = text.match(/(https?:\/\/[^\s]+|www\.[^\s]+)/i);
-  const website = websiteMatch ? websiteMatch[0] : '';
+  // Singapore phone number: 65 XXXX XXXX, with optional '+' and optional spaces
+  const phoneMatch = text.match(/\+?65\s?\d{4}\s?\d{4}/);
+  let phone = phoneMatch ? phoneMatch[0] : '';
+  if (phone) {
+    phone = phone.replace(/\s+/g, ' '); // normalise spacing
+  }
 
-  // Look for opening hours (very naive)
-  const openingHoursLine = lines.find(l => /(mon|tue|wed|thu|fri|sat|sun|am|pm)/i.test(l)) || '';
+  // Website: detect domain like example.com (with or without protocol)
+  const websiteMatch = text.match(/(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+  let website = websiteMatch ? websiteMatch[0].replace(/^[^A-Za-z]+/, '') : '';
+
+  // Opening hours: XX:XX - XX:XX (24-hour) with optional spaces
+  const openingHoursMatch = text.match(/(?:[01]?\d|2[0-3]):[0-5]\d\s*[-–]\s*(?:[01]?\d|2[0-3]):[0-5]\d/);
+  let openingHours = openingHoursMatch ? openingHoursMatch[0].replace(/\s+/g, ' ') : '';
 
   // Guess business category based on keywords
   const categories = {
@@ -87,10 +100,17 @@ function extractInfo(rawText) {
     }
   }
 
+  // Use "Not Found" when a field could not be extracted to match strict rules
+  if (!storeName) storeName = 'Not Found';
+  if (!unitNumber) unitNumber = 'Not Found';
+  if (!openingHours) openingHours = 'Not Found';
+  if (!phone) phone = 'Not Found';
+  if (!website) website = 'Not Found';
+
   return {
     storeName,
     unitNumber,
-    openingHours: openingHoursLine,
+    openingHours,
     phone,
     website,
     businessType,
