@@ -29,6 +29,8 @@ function renderTable() {
       <td>${scan.openingHours}</td>
       <td>${scan.phone}</td>
       <td>${scan.website}</td>
+      <td>${scan.lat}</td>
+      <td>${scan.lng}</td>
       <td>${scan.businessType}</td>`;
     tableBody.appendChild(tr);
   });
@@ -52,10 +54,10 @@ document.getElementById('exportBtn').addEventListener('click', () => {
     alert('No data to export');
     return;
   }
-  const headers = ['Store Name','Unit','Opening Hours','Phone','Website','Type'];
+  const headers = ['Store Name','Unit','Opening Hours','Phone','Website','Lat','Lng','Type'];
   const csvRows = [headers.join(',')];
   scans.forEach(s => {
-    const row = [s.storeName, s.unitNumber, s.openingHours, s.phone, s.website, s.businessType]
+    const row = [s.storeName, s.unitNumber, s.openingHours, s.phone, s.website, s.lat, s.lng, s.businessType]
       .map(v => '"' + (v || '').replace(/"/g,'""') + '"').join(',');
     csvRows.push(row);
   });
@@ -159,7 +161,8 @@ document.getElementById('scanBtn').addEventListener('click', async () => {
 
   statusDiv.textContent = 'Processing…';
 
-  const info = extractInfo(text, lines);
+  const geo = await getCurrentLocation();
+  const info = Object.assign({ lat: geo.lat, lng: geo.lng }, extractInfo(text, lines));
   scans.push(info);
   saveScans();
   renderTable();
@@ -258,4 +261,20 @@ function extractInfo(rawText, ocrLines = []) {
     businessType,
     rawText: text
   };
+}
+
+// Update headers array later; define at top constants perhaps not needed now
+// Add helper to get current GPS as promise
+function getCurrentLocation() {
+  return new Promise(resolve => {
+    if (!navigator.geolocation) return resolve({lat: '', lng: ''});
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const { latitude, longitude } = pos.coords;
+        resolve({ lat: latitude.toFixed(6), lng: longitude.toFixed(6) });
+      },
+      () => resolve({ lat: '', lng: '' }),
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 30000 }
+    );
+  });
 } 
