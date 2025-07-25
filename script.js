@@ -1,9 +1,39 @@
 // Initialize camera feed
 const video = document.getElementById('camera');
 const statusDiv = document.getElementById('status');
-const resultsDiv = document.getElementById('results');
+const tableBody = document.querySelector('#resultsTable tbody');
+const resultsDiv = null; // deprecated
 const progressBar = document.getElementById('progressBar');
 const progressFill = document.getElementById('progressFill');
+
+// Persistent scans storage
+let scans = [];
+try {
+  scans = JSON.parse(localStorage.getItem('scans') || '[]');
+} catch (_) { scans = []; }
+
+renderTable();
+
+function saveScans() {
+  localStorage.setItem('scans', JSON.stringify(scans));
+}
+
+function renderTable() {
+  if (!tableBody) return;
+  tableBody.innerHTML = '';
+  scans.forEach((scan, idx) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${idx + 1}</td>
+      <td>${scan.storeName}</td>
+      <td>${scan.unitNumber}</td>
+      <td>${scan.openingHours}</td>
+      <td>${scan.phone}</td>
+      <td>${scan.website}</td>
+      <td>${scan.businessType}</td>`;
+    tableBody.appendChild(tr);
+  });
+}
 
 // ----------- Dictionary + spell-correction setup -----------
 let englishWords = [];
@@ -97,7 +127,9 @@ document.getElementById('scanBtn').addEventListener('click', async () => {
   statusDiv.textContent = 'Processing…';
 
   const info = extractInfo(text, lines);
-  resultsDiv.textContent = JSON.stringify(info, null, 2);
+  scans.push(info);
+  saveScans();
+  renderTable();
   statusDiv.textContent = '';
   progressBar.style.display = 'none';
 });
