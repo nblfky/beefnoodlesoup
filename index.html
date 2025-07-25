@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Storefront Scanner</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { margin: 0; font-family: Arial, Helvetica, sans-serif; text-align: center; background: #fafafa; }
+    h1 { font-size: 1.4rem; margin: 1rem 0; }
+    video { width: 100%; height: auto; background: #000; }
+    button { margin: 1rem; padding: 0.7rem 1.4rem; font-size: 1.1rem; border: none; background: #0078d4; color: #fff; border-radius: 4px; }
+    button:active { opacity: 0.8; }
+    #status { font-size: 0.9rem; color: #666; }
+    #results { white-space: pre-wrap; text-align: left; padding: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>Storefront Scanner</h1>
+  <video id="camera" autoplay playsinline></video>
+  <button id="scanBtn">Scan</button>
+  <div id="status"></div>
+  <div id="results"></div>
+
+  <!-- OCR Library -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+  <!-- App logic -->
+  <script src="script.js"></script>
+</body>
+</html> 
