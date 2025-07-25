@@ -3,6 +3,38 @@ const video = document.getElementById('camera');
 const statusDiv = document.getElementById('status');
 const resultsDiv = document.getElementById('results');
 
+// ----------- Dictionary + spell-correction setup -----------
+let englishWords = [];
+async function loadDictionary() {
+  try {
+    const res = await fetch('https://raw.githubusercontent.com/dwyl/english-words/master/words_alpha.txt');
+    const text = await res.text();
+    englishWords = text.split('\n');
+    console.log(`Dictionary loaded: ${englishWords.length} words`);
+  } catch (err) {
+    console.warn('Failed to load dictionary – spell correction disabled', err);
+  }
+}
+
+loadDictionary();
+
+function correctStoreName(name) {
+  if (!name || !englishWords.length || typeof didYouMean !== 'function') return name;
+
+  // Break by whitespace / punctuation while preserving words
+  const tokens = name.split(/(\s+)/); // keep spaces as tokens
+  const corrected = tokens.map(tok => {
+    if (/^\s+$/.test(tok)) return tok; // keep spaces
+    const suggestion = didYouMean(tok.toLowerCase(), englishWords, { threshold: 0.4 });
+    return suggestion ? capitalize(suggestion) : tok;
+  });
+  return corrected.join('');
+}
+
+function capitalize(word) {
+  return word.charAt(0).toUpperCase() + word.slice(1);
+}
+
 async function initCamera() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -92,6 +124,7 @@ function extractInfo(rawText, ocrLines = []) {
     });
   }
   if (!storeName) storeName = lines[0] || '';
+  storeName = correctStoreName(storeName);
 
   // Unit number must be in the form #XX-XXX
   const unitMatch = text.match(/#\d{2}-\d{3}/);
