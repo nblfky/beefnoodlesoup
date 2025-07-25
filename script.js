@@ -2,7 +2,6 @@
 const video = document.getElementById('camera');
 const statusDiv = document.getElementById('status');
 const tableBody = document.querySelector('#resultsTable tbody');
-const resultsDiv = null; // deprecated
 const progressBar = document.getElementById('progressBar');
 const progressFill = document.getElementById('progressFill');
 
@@ -94,7 +93,6 @@ document.getElementById('scanBtn').addEventListener('click', async () => {
   }
 
   statusDiv.textContent = 'Scanning…';
-  resultsDiv.textContent = '';
   progressBar.style.display = 'block';
   progressFill.style.width = '0%';
 
