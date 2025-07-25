@@ -71,6 +71,39 @@ document.getElementById('exportBtn').addEventListener('click', () => {
   setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 0);
 });
 
+// ---------- Geolocation ----------
+let currentLocation = { lat: '', lng: '' };
+
+async function initLocation() {
+  statusDiv.textContent = 'Requesting location…';
+  currentLocation = await getCurrentLocation(true);
+  if (!currentLocation.lat) {
+    statusDiv.textContent = 'Location unavailable – scans will show N/A';
+  } else {
+    statusDiv.textContent = '';
+  }
+}
+
+// call immediately
+initLocation();
+
+function getCurrentLocation(initial = false) {
+  return new Promise(resolve => {
+    if (!navigator.geolocation) return resolve({ lat: '', lng: '' });
+
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const { latitude, longitude } = pos.coords;
+        resolve({ lat: latitude.toFixed(6), lng: longitude.toFixed(6) });
+      },
+      err => {
+        if (!initial) console.warn('Geolocation error', err.message);
+        resolve({ lat: '', lng: '' });
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
+    );
+  });
+}
 // ----------- Dictionary + spell-correction setup -----------
 let englishWords = [];
 async function loadDictionary() {
@@ -161,8 +194,12 @@ document.getElementById('scanBtn').addEventListener('click', async () => {
 
   statusDiv.textContent = 'Processing…';
 
-  const geo = await getCurrentLocation();
-  const info = Object.assign({ lat: geo.lat, lng: geo.lng }, extractInfo(text, lines));
+  let geo = currentLocation;
+  if (!geo.lat) {
+    // attempt quick fetch
+    geo = await getCurrentLocation();
+  }
+  const info = Object.assign({ lat: geo.lat || 'Not Found', lng: geo.lng || 'Not Found' }, extractInfo(text, lines));
   scans.push(info);
   saveScans();
   renderTable();
@@ -261,20 +298,4 @@ function extractInfo(rawText, ocrLines = []) {
     businessType,
     rawText: text
   };
-}
-
-// Update headers array later; define at top constants perhaps not needed now
-// Add helper to get current GPS as promise
-function getCurrentLocation() {
-  return new Promise(resolve => {
-    if (!navigator.geolocation) return resolve({lat: '', lng: ''});
-    navigator.geolocation.getCurrentPosition(
-      pos => {
-        const { latitude, longitude } = pos.coords;
-        resolve({ lat: latitude.toFixed(6), lng: longitude.toFixed(6) });
-      },
-      () => resolve({ lat: '', lng: '' }),
-      { enableHighAccuracy: true, timeout: 5000, maximumAge: 30000 }
-    );
-  });
 } 
