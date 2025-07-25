@@ -6,7 +6,11 @@ const resultsDiv = document.getElementById('results');
 async function initCamera() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: 'environment' } },
+      video: {
+        facingMode: { ideal: 'environment' },
+        width: { ideal: 1920 },
+        height: { ideal: 1080 }
+      },
       audio: false
     });
     video.srcObject = stream;
@@ -35,8 +39,19 @@ document.getElementById('scanBtn').addEventListener('click', async () => {
   const ctx = canvas.getContext('2d');
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
+  // Simple contrast enhancement to aid OCR
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const dataArr = imageData.data;
+  for (let i = 0; i < dataArr.length; i += 4) {
+    // convert to grayscale
+    const avg = (dataArr[i] + dataArr[i + 1] + dataArr[i + 2]) / 3;
+    const contrasted = avg > 128 ? 255 : 0; // simple threshold
+    dataArr[i] = dataArr[i + 1] = dataArr[i + 2] = contrasted;
+  }
+  ctx.putImageData(imageData, 0, 0);
+
   // Run OCR with additional parameters for better accuracy
-  const { data: { text, confidence } } = await Tesseract.recognize(canvas, 'eng', {
+  const result = await Tesseract.recognize(canvas, 'eng', {
     logger: m => {
       if (m.progress !== undefined) {
         statusDiv.textContent = `Scanning… ${Math.floor(m.progress * 100)}%`;
@@ -46,23 +61,37 @@ document.getElementById('scanBtn').addEventListener('click', async () => {
     tessedit_pageseg_mode: 6 // Assume a single uniform block of text
   });
 
+  const { text, confidence, lines } = result.data;
   console.log('OCR confidence', confidence);
 
   statusDiv.textContent = 'Processing…';
 
-  const info = extractInfo(text);
+  const info = extractInfo(text, lines);
   resultsDiv.textContent = JSON.stringify(info, null, 2);
   statusDiv.textContent = '';
 });
 
 // Extract structured information from raw OCR text
-function extractInfo(rawText) {
+function extractInfo(rawText, ocrLines = []) {
   // Normalise whitespace
   const text = rawText.replace(/\n+/g, '\n').trim();
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
 
   // ----- Patterns based on rules provided -----
-  let storeName = lines[0] || '';
+  // Pick the most prominent OCR line if bounding boxes are available
+  let storeName = '';
+  if (ocrLines.length) {
+    let maxArea = 0;
+    ocrLines.forEach(l => {
+      const { bbox } = l;
+      const area = (bbox.x1 - bbox.x0) * (bbox.y1 - bbox.y0);
+      if (area > maxArea) {
+        maxArea = area;
+        storeName = l.text.trim();
+      }
+    });
+  }
+  if (!storeName) storeName = lines[0] || '';
 
   // Unit number must be in the form #XX-XXX
   const unitMatch = text.match(/#\d{2}-\d{3}/);
