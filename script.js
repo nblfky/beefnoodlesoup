@@ -26,11 +26,9 @@ function renderTable() {
       <td>${idx + 1}</td>
       <td>${scan.storeName}</td>
       <td>${scan.unitNumber}</td>
-      <td>${scan.openingHours}</td>
-      <td>${scan.phone}</td>
-      <td>${scan.website}</td>
-      <td>${scan.lat}</td>
-      <td>${scan.lng}</td>
+      <td>${scan.address ?? 'Not Found'}</td>
+      <td>${scan.lat ?? 'Not Found'}</td>
+      <td>${scan.lng ?? 'Not Found'}</td>
       <td>${scan.businessType}</td>`;
     tableBody.appendChild(tr);
   });
@@ -54,10 +52,10 @@ document.getElementById('exportBtn').addEventListener('click', () => {
     alert('No data to export');
     return;
   }
-  const headers = ['Store Name','Unit','Opening Hours','Phone','Website','Lat','Lng','Type'];
+  const headers = ['Store Name','Unit','Address','Lat','Lng','Type'];
   const csvRows = [headers.join(',')];
   scans.forEach(s => {
-    const row = [s.storeName, s.unitNumber, s.openingHours, s.phone, s.website, s.lat, s.lng, s.businessType]
+    const row = [s.storeName, s.unitNumber, s.address, s.lat, s.lng, s.businessType]
       .map(v => '"' + (v || '').replace(/"/g,'""') + '"').join(',');
     csvRows.push(row);
   });
@@ -285,16 +283,19 @@ function extractInfo(rawText, ocrLines = []) {
   // Use "Not Found" when a field could not be extracted to match strict rules
   if (!storeName) storeName = 'Not Found';
   if (!unitNumber) unitNumber = 'Not Found';
-  if (!openingHours) openingHours = 'Not Found';
-  if (!phone) phone = 'Not Found';
-  if (!website) website = 'Not Found';
+  if (!openingHours) openingHours = 'Not Found'; // kept for future reference
+  if (!phone) phone = 'Not Found';              // kept for future reference
+  if (!website) website = 'Not Found';          // kept for future reference
+
+  // Placeholder – address extraction will be implemented later or via geocoding
+  let address = '';
+
+  if (!address) address = 'Not Found';
 
   return {
     storeName,
     unitNumber,
-    openingHours,
-    phone,
-    website,
+    address,
     businessType,
     rawText: text
   };
