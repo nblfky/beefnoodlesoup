@@ -102,6 +102,26 @@ function getCurrentLocation(initial = false) {
     );
   });
 }
+
+// --- OneMap (Singapore) reverse-geocoding helper ---
+async function reverseGeocode(lat, lng) {
+  try {
+    const url = `https://developers.onemap.sg/commonapi/revgeocode?location=${lat},${lng}&returnGeom=N&getAddrDetails=Y`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const result = data?.GeocodeInfo?.[0];
+    if (!result) return '';
+    // Compose an address string similar to OneMap examples
+    if (result.BLOCK && result.ROAD && result.POSTAL) {
+      return `${result.BLOCK} ${result.ROAD} SINGAPORE ${result.POSTAL}`.trim();
+    }
+    // Fallback to whatever field is available
+    return result.BUILDING || result.ADDRESS || '';
+  } catch (err) {
+    console.warn('Reverse geocode failed', err);
+    return '';
+  }
+}
 // ----------- Dictionary + spell-correction setup -----------
 let englishWords = [];
 async function loadDictionary() {
@@ -251,6 +271,17 @@ document.getElementById('scanBtn').addEventListener('click', async () => {
   // Prefer ChatGPT extraction if API key is set
   let parsed = await extractInfoGPT(text);
   if (!parsed) parsed = extractInfo(text, lines);
+
+  // Fetch physical address using OneMap if we have coordinates
+  let address = '';
+  if (geo.lat && geo.lng) {
+    address = await reverseGeocode(geo.lat, geo.lng);
+  }
+  if (address) {
+    parsed.address = address;
+  } else if (!parsed.address) {
+    parsed.address = 'Not Found';
+  }
 
   const info = Object.assign({ lat: geo.lat || 'Not Found', lng: geo.lng || 'Not Found' }, parsed);
   scans.push(info);
