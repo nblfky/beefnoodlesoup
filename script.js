@@ -116,6 +116,56 @@ async function loadDictionary() {
 }
 
 loadDictionary();
+// --- ChatGPT integration ---
+let openaiApiKey = localStorage.getItem('openaiApiKey') || '';
+
+function setOpenAIApiKey(key) {
+  openaiApiKey = key;
+  if (key) {
+    localStorage.setItem('openaiApiKey', key);
+  } else {
+    localStorage.removeItem('openaiApiKey');
+  }
+}
+
+async function extractInfoGPT(rawText) {
+  if (!openaiApiKey) return null;
+  try {
+    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + openaiApiKey
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        temperature: 0,
+        messages: [
+          { role: 'system', content: 'You extract structured data from storefront OCR.' },
+          { role: 'user', content: `Extract JSON with keys: storeName, unitNumber, address, businessType. Use "Not Found" if unknown. OCR: """${rawText}"""` }
+        ]
+      })
+    });
+    const data = await resp.json();
+    const content = data.choices?.[0]?.message?.content || '';
+    const match = content.match(/\{[\s\S]*\}/);
+    if (!match) return null;
+    return JSON.parse(match[0]);
+  } catch (err) {
+    console.warn('ChatGPT parsing failed', err);
+    return null;
+  }
+}
+
+// Prompt user to set API key if not already stored
+if (!openaiApiKey) {
+  setTimeout(() => {
+    if (confirm('Enter your OpenAI API key to enable ChatGPT parsing?')) {
+      const key = prompt('OpenAI API key (sk-...)');
+      if (key) setOpenAIApiKey(key.trim());
+    }
+  }, 500);
+}
 
 function correctStoreName(name) {
   if (!name || !englishWords.length || typeof didYouMean !== 'function') return name;
@@ -197,7 +247,12 @@ document.getElementById('scanBtn').addEventListener('click', async () => {
     // attempt quick fetch
     geo = await getCurrentLocation();
   }
-  const info = Object.assign({ lat: geo.lat || 'Not Found', lng: geo.lng || 'Not Found' }, extractInfo(text, lines));
+
+  // Prefer ChatGPT extraction if API key is set
+  let parsed = await extractInfoGPT(text);
+  if (!parsed) parsed = extractInfo(text, lines);
+
+  const info = Object.assign({ lat: geo.lat || 'Not Found', lng: geo.lng || 'Not Found' }, parsed);
   scans.push(info);
   saveScans();
   renderTable();
