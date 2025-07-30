@@ -116,7 +116,11 @@ async function reverseGeocode(lat, lng) {
       return `${result.BLOCK} ${result.ROAD} SINGAPORE ${result.POSTAL}`.trim();
     }
     // Fallback to whatever field is available
-    return result.BUILDING || result.ADDRESS || '';
+    return (
+      [result.BLOCK, result.ROAD, result.BUILDING, result.ADDRESS, result.POSTAL]
+        .filter(Boolean)
+        .join(' ') || ''
+    );
   } catch (err) {
     console.warn('Reverse geocode failed', err);
     return '';
