@@ -1,4 +1,33 @@
 // Initialize camera feed
+import OpenAI from 'https://esm.sh/openai?bundle';
+
+// --- OpenAI Vision setup ---
+let openaiClient = null;
+function getOpenAIClient() {
+  if (!openaiApiKey) return null;
+  if (openaiClient) return openaiClient;
+  openaiClient = new OpenAI({ apiKey: openaiApiKey, dangerouslyAllowBrowser: true });
+  return openaiClient;
+}
+
+// Analyse an image with GPT-4o Vision style prompt. Accepts a question and a data-URL or remote image URL.
+async function askImageQuestion(question, imageUrl) {
+  const client = getOpenAIClient();
+  if (!client) return null;
+  try {
+    const resp = await client.responses.create({
+      model: 'gpt-4o',
+      input: [
+        { role: 'user', content: question },
+        { role: 'user', content: [{ type: 'image_url', image_url: imageUrl }] },
+      ],
+    });
+    return resp.output_text || '';
+  } catch (err) {
+    console.warn('OpenAI Vision request failed', err);
+    return null;
+  }
+}
 const video = document.getElementById('camera');
 const statusDiv = document.getElementById('status');
 const tableBody = document.querySelector('#resultsTable tbody');
@@ -7,6 +36,10 @@ const progressFill = document.getElementById('progressFill');
 
 // Persistent scans storage
 let scans = [];
+// Note: openaiApiKey is defined later, but we need it before using getOpenAIClient().
+// We will forward-declare it here and assign when loaded below.
+let openaiApiKey;
+openaiApiKey = localStorage.getItem('openaiApiKey') || '';
 try {
   scans = JSON.parse(localStorage.getItem('scans') || '[]');
 } catch (_) { scans = []; }
@@ -141,10 +174,10 @@ async function loadDictionary() {
 
 loadDictionary();
 // --- ChatGPT integration ---
-let openaiApiKey = localStorage.getItem('openaiApiKey') || '';
 
 function setOpenAIApiKey(key) {
   openaiApiKey = key;
+  openaiClient = null; // reset so fresh client picks up new key
   if (key) {
     localStorage.setItem('openaiApiKey', key);
   } else {
@@ -244,6 +277,12 @@ document.getElementById('scanBtn').addEventListener('click', async () => {
   canvas.height = video.videoHeight;
   const ctx = canvas.getContext('2d');
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  // Vision API (optional): ask about the storefront image – runs in parallel, result is logged only
+  if (openaiApiKey) {
+    askImageQuestion('What is written on the main storefront sign? Reply with just the text you see.', canvas.toDataURL('image/jpeg', 0.8))
+      .then(ans => ans && console.log('GPT-4o Vision answer:', ans));
+  }
 
   // (Optional) Image preprocessing has been disabled as aggressive thresholding
   // reduced accuracy on some signs. Keeping original frame for OCR.
