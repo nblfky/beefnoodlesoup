@@ -342,6 +342,11 @@ async function performScanFromCanvas(canvas) {
     if (!parsed) parsed = extractInfo(text, lines);
   }
 
+  // Map extracted business type to canonical category (applies to Vision or OCR)
+  if (parsed && parsed.businessType) {
+    parsed.businessType = await mapToCompanyCategory(parsed.businessType);
+  }
+
   let address = '';
   if (geo.lat && geo.lng) {
     address = await reverseGeocode(geo.lat, geo.lng);
@@ -501,4 +506,65 @@ function extractInfo(rawText, ocrLines = []) {
     businessType,
     rawText: text
   };
+}
+
+// --- Company category mapping ---
+let companyCategories = [];
+
+async function loadCompanyCategories() {
+  if (companyCategories.length) return companyCategories;
+  try {
+    // First try pre-generated JSON (faster)
+    const jsonRes = await fetch('categories.json');
+    if (jsonRes.ok) {
+      companyCategories = (await jsonRes.json()).map(cat => ({
+        key: cat.key,
+        name: (cat.name || '').toLowerCase(),
+        last: (cat.key.split('::').filter(Boolean).pop() || '').toLowerCase()
+      }));
+      console.log(`Loaded ${companyCategories.length} categories from JSON`);
+      return companyCategories;
+    }
+  } catch (_) {
+    /* fallthrough to CSV */
+  }
+
+  try {
+    // Fallback to CSV shipped alongside the app if JSON unavailable
+    const csvPath = encodeURI('Geo Places - Final POI Category Tree - Q2 2024 - 2. Category Tree.csv');
+    const res = await fetch(csvPath);
+    const csvText = await res.text();
+    const lines = csvText.split(/\r?\n/);
+    lines.shift(); // drop header
+    const splitter = /,(?=(?:[^"]*\"[^"]*\")*[^\"]*$)/;
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      const cols = line.split(splitter);
+      const name = (cols[3] || '').replace(/^"|"$/g, '').trim();
+      const keyRaw = (cols[5] || '').replace(/^"|"$/g, '').trim();
+      if (!keyRaw) continue;
+      const key = keyRaw.replace(/:+$/, '');
+      const lastSegment = key.split('::').filter(Boolean).pop() || '';
+      companyCategories.push({ key, name: name.toLowerCase(), last: lastSegment.toLowerCase() });
+    }
+    console.log(`Parsed ${companyCategories.length} categories from CSV`);
+  } catch (err) {
+    console.warn('Failed to load categories from CSV', err);
+  }
+  return companyCategories;
+}
+
+async function mapToCompanyCategory(freeText = '') {
+  if (!freeText || freeText === 'Unknown' || freeText === 'Not Found') return freeText;
+  const txt = freeText.toLowerCase().trim();
+  await loadCompanyCategories();
+  if (!companyCategories.length) return freeText;
+
+  // Exact match against name or last segment
+  let match = companyCategories.find(cat => cat.name === txt || cat.last === txt);
+  if (match) return match.key;
+
+  // Sub-string containment
+  match = companyCategories.find(cat => txt.includes(cat.name) || cat.name.includes(txt) || txt.includes(cat.last));
+  return match ? match.key : freeText;
 } 
