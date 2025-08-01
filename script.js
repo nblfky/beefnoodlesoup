@@ -274,12 +274,15 @@ async function performScanFromCanvas(canvas) {
   progressBar.style.display = 'block';
   progressFill.style.width = '0%';
 
-  // Vision API (optional)
+  // --- Vision API (optional) ---
+  let visionName = '';
   if (openaiApiKey) {
-    askImageQuestion(
-      'What is written on the main storefront sign? Reply with just the text you see.',
+    visionName = await askImageQuestion(
+      'What is the store name displayed on the main storefront sign? ' +
+      'Reply with just the name.',
       canvas.toDataURL('image/jpeg', 0.8)
-    ).then(ans => ans && console.log('GPT-4o Vision answer:', ans));
+    );
+    console.log('GPT-4o Vision store name:', visionName);
   }
 
   // Run OCR
@@ -307,6 +310,11 @@ async function performScanFromCanvas(canvas) {
 
   let parsed = await extractInfoGPT(text);
   if (!parsed) parsed = extractInfo(text, lines);
+
+  // If OCR/ChatGPT couldn’t find a name, use Vision’s answer
+  if ((!parsed.storeName || parsed.storeName === 'Not Found') && visionName) {
+    parsed.storeName = visionName.trim();
+  }
 
   let address = '';
   if (geo.lat && geo.lng) {
