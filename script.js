@@ -186,7 +186,8 @@ function getCurrentLocation(initial = false) {
 // 3. Falls back to the `ADDRESS` field when it is already formatted.
 async function reverseGeocode(lat, lng) {
   try {
-    const url = `https://developers.onemap.sg/commonapi/revgeocode?location=${lat},${lng}&returnGeom=N&getAddrDetails=Y`;
+    // Newer API version expects separate lat & lon query params (see https://docs.onemap.sg/#revgeocode)
+    const url = `https://developers.onemap.sg/commonapi/revgeocode?lat=${lat}&lon=${lng}&returnGeom=N&getAddrDetails=Y`;
     const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
