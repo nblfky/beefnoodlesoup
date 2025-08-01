@@ -19,8 +19,13 @@ async function askImageQuestion(question, imageUrl) {
       model: 'gpt-4o',
       input: [
         { role: 'user', content: question },
-        { role: 'user', content: [{ type: 'image_url', image_url: imageUrl }] },
-      ],
+        {
+          role: 'user',
+          content: [
+            { type: 'input_image', image_url: imageUrl }
+          ]
+        }
+      ]
     });
     return resp.output_text || '';
   } catch (err) {
