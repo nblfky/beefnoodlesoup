@@ -33,6 +33,9 @@ const statusDiv = document.getElementById('status');
 const tableBody = document.querySelector('#resultsTable tbody');
 const progressBar = document.getElementById('progressBar');
 const progressFill = document.getElementById('progressFill');
+// --- NEW: Image upload elements ---
+const uploadBtn = document.getElementById('uploadBtn');
+const imageInput = document.getElementById('imageInput');
 
 // Persistent scans storage
 let scans = [];
@@ -260,6 +263,67 @@ async function initCamera() {
 
 initCamera();
 
+// --- Helper: run OCR + processing on any canvas source (camera or uploaded) ---
+async function performScanFromCanvas(canvas) {
+  statusDiv.textContent = 'Scanning…';
+  progressBar.style.display = 'block';
+  progressFill.style.width = '0%';
+
+  // Vision API (optional)
+  if (openaiApiKey) {
+    askImageQuestion(
+      'What is written on the main storefront sign? Reply with just the text you see.',
+      canvas.toDataURL('image/jpeg', 0.8)
+    ).then(ans => ans && console.log('GPT-4o Vision answer:', ans));
+  }
+
+  // Run OCR
+  const result = await Tesseract.recognize(canvas, 'eng', {
+    logger: m => {
+      if (m.progress !== undefined) {
+        const percent = Math.floor(m.progress * 100);
+        statusDiv.textContent = `Scanning… ${percent}%`;
+        progressFill.style.width = percent + '%';
+      }
+    },
+    tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789:#&-.',
+    tessedit_pageseg_mode: 6
+  });
+
+  const { text, confidence, lines } = result.data;
+  console.log('OCR confidence', confidence);
+
+  statusDiv.textContent = 'Processing…';
+
+  let geo = currentLocation;
+  if (!geo.lat) {
+    geo = await getCurrentLocation();
+  }
+
+  let parsed = await extractInfoGPT(text);
+  if (!parsed) parsed = extractInfo(text, lines);
+
+  let address = '';
+  if (geo.lat && geo.lng) {
+    address = await reverseGeocode(geo.lat, geo.lng);
+  }
+  if (address) {
+    parsed.address = address;
+  } else if (!parsed.address) {
+    parsed.address = 'Not Found';
+  }
+
+  const info = Object.assign(
+    { lat: geo.lat || 'Not Found', lng: geo.lng || 'Not Found' },
+    parsed
+  );
+  scans.push(info);
+  saveScans();
+  renderTable();
+  statusDiv.textContent = '';
+  progressBar.style.display = 'none';
+}
+
 // Scan button handler
 document.getElementById('scanBtn').addEventListener('click', async () => {
   if (!video.videoWidth) {
@@ -278,61 +342,31 @@ document.getElementById('scanBtn').addEventListener('click', async () => {
   const ctx = canvas.getContext('2d');
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-  // Vision API (optional): ask about the storefront image – runs in parallel, result is logged only
-  if (openaiApiKey) {
-    askImageQuestion('What is written on the main storefront sign? Reply with just the text you see.', canvas.toDataURL('image/jpeg', 0.8))
-      .then(ans => ans && console.log('GPT-4o Vision answer:', ans));
-  }
-
-  // (Optional) Image preprocessing has been disabled as aggressive thresholding
-  // reduced accuracy on some signs. Keeping original frame for OCR.
-
-  // Run OCR with additional parameters for better accuracy
-  const result = await Tesseract.recognize(canvas, 'eng', {
-    logger: m => {
-      if (m.progress !== undefined) {
-        const percent = Math.floor(m.progress * 100);
-        statusDiv.textContent = `Scanning… ${percent}%`;
-        progressFill.style.width = percent + '%';
-      }
-    },
-    tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789:#&-.',
-    tessedit_pageseg_mode: 6 // Assume a single uniform block of text
-  });
-
-  const { text, confidence, lines } = result.data;
-  console.log('OCR confidence', confidence);
-
-  statusDiv.textContent = 'Processing…';
-
-  let geo = currentLocation;
-  if (!geo.lat) {
-    // attempt quick fetch
-    geo = await getCurrentLocation();
-  }
-
-  // Prefer ChatGPT extraction if API key is set
-  let parsed = await extractInfoGPT(text);
-  if (!parsed) parsed = extractInfo(text, lines);
-
-  // Fetch physical address using OneMap if we have coordinates
-  let address = '';
-  if (geo.lat && geo.lng) {
-    address = await reverseGeocode(geo.lat, geo.lng);
-  }
-  if (address) {
-    parsed.address = address;
-  } else if (!parsed.address) {
-    parsed.address = 'Not Found';
-  }
-
-  const info = Object.assign({ lat: geo.lat || 'Not Found', lng: geo.lng || 'Not Found' }, parsed);
-  scans.push(info);
-  saveScans();
-  renderTable();
-  statusDiv.textContent = '';
-  progressBar.style.display = 'none';
+  await performScanFromCanvas(canvas);
 });
+
+// Upload image handler
+if (uploadBtn && imageInput) {
+  uploadBtn.addEventListener('click', () => imageInput.click());
+
+  imageInput.addEventListener('change', e => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    const img = new Image();
+    img.onload = async () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      await performScanFromCanvas(canvas);
+      URL.revokeObjectURL(img.src);
+    };
+    img.src = URL.createObjectURL(file);
+    imageInput.value = '';
+  });
+}
 
 // Extract structured information from raw OCR text
 function extractInfo(rawText, ocrLines = []) {
