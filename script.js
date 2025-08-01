@@ -173,23 +173,41 @@ function getCurrentLocation(initial = false) {
 }
 
 // --- OneMap (Singapore) reverse-geocoding helper ---
+// Note: OneMap’s JSON schema has changed over time. Newer responses
+// use a `results` array with camel-/snake-case keys (e.g. `BLK_NO`,
+// `ROAD_NAME`, `POSTAL`). The original version of this file only
+// handled the older `GeocodeInfo` shape, which is why it silently
+// returned "" and the UI showed "Not Found".
+//
+// This implementation now:
+// 1. Accepts either `GeocodeInfo` or `results`.
+// 2. Normalises the field names so we can build a readable address
+//    without having to worry about the exact schema version.
+// 3. Falls back to the `ADDRESS` field when it is already formatted.
 async function reverseGeocode(lat, lng) {
   try {
     const url = `https://developers.onemap.sg/commonapi/revgeocode?location=${lat},${lng}&returnGeom=N&getAddrDetails=Y`;
     const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    const result = data?.GeocodeInfo?.[0];
+
+    // Handle both possible response shapes
+    const result = (data.GeocodeInfo || data.results || data.ReverseGeocodeInfo)?.[0];
     if (!result) return '';
-    // Compose an address string similar to OneMap examples
-    if (result.BLOCK && result.ROAD && result.POSTAL) {
-      return `${result.BLOCK} ${result.ROAD} SINGAPORE ${result.POSTAL}`.trim();
-    }
-    // Fallback to whatever field is available
-    return (
-      [result.BLOCK, result.ROAD, result.BUILDING, result.ADDRESS, result.POSTAL]
-        .filter(Boolean)
-        .join(' ') || ''
-    );
+
+    // Normalise keys so we can treat both schemas uniformly
+    const blk   = result.BLOCK      || result.BLK_NO      || result.block      || result.blk_no;
+    const road  = result.ROAD       || result.ROAD_NAME   || result.road       || result.road_name;
+    const bldg  = result.BUILDING   || result.BUILDINGNAME|| result.building   || result.buildingname;
+    const postal= result.POSTAL     || result.POSTALCODE  || result.postal     || result.postalcode;
+    const addr  = result.ADDRESS    || result.address;
+
+    // Prefer a pre-formatted ADDRESS string if provided
+    if (addr) return addr.trim();
+
+    // Otherwise stitch together what we have
+    const parts = [blk, road, bldg, 'SINGAPORE', postal].filter(Boolean);
+    return parts.join(' ').trim();
   } catch (err) {
     console.warn('Reverse geocode failed', err);
     return '';
