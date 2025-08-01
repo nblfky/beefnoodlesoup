@@ -33,6 +33,34 @@ async function askImageQuestion(question, imageUrl) {
     return null;
   }
 }
+
+// Extract structured JSON directly from an image using GPT-4o Vision
+async function extractInfoVision(imageUrl) {
+  const client = getOpenAIClient();
+  if (!client) return null;
+  try {
+    const resp = await client.responses.create({
+      model: 'gpt-4o',
+      input: [
+        {
+          role: 'user',
+          content:
+            'Extract JSON with keys: storeName, unitNumber, address, businessType. Use "Not Found" if unknown.'
+        },
+        {
+          role: 'user',
+          content: [{ type: 'input_image', image_url: imageUrl }]
+        }
+      ]
+    });
+    const txt = resp.output_text || '';
+    const match = txt.match(/\{[\s\S]*\}/);
+    return match ? JSON.parse(match[0]) : null;
+  } catch (err) {
+    console.warn('Vision JSON extraction failed', err);
+    return null;
+  }
+}
 const video = document.getElementById('camera');
 const statusDiv = document.getElementById('status');
 const tableBody = document.querySelector('#resultsTable tbody');
@@ -274,46 +302,44 @@ async function performScanFromCanvas(canvas) {
   progressBar.style.display = 'block';
   progressFill.style.width = '0%';
 
-  // --- Vision API (optional) ---
-  let visionName = '';
+  const imageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+
+  // Try Vision JSON extraction first
+  let parsed = null;
   if (openaiApiKey) {
-    visionName = await askImageQuestion(
-      'What is the store name displayed on the main storefront sign? ' +
-      'Reply with just the name.',
-      canvas.toDataURL('image/jpeg', 0.8)
-    );
-    console.log('GPT-4o Vision store name:', visionName);
+    statusDiv.textContent = 'Analyzing with GPT-4o…';
+    parsed = await extractInfoVision(imageDataUrl);
+    if (parsed) {
+      console.log('Vision JSON:', parsed);
+    }
   }
-
-  // Run OCR
-  const result = await Tesseract.recognize(canvas, 'eng', {
-    logger: m => {
-      if (m.progress !== undefined) {
-        const percent = Math.floor(m.progress * 100);
-        statusDiv.textContent = `Scanning… ${percent}%`;
-        progressFill.style.width = percent + '%';
-      }
-    },
-    tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789:#&-.',
-    tessedit_pageseg_mode: 6
-  });
-
-  const { text, confidence, lines } = result.data;
-  console.log('OCR confidence', confidence);
-
-  statusDiv.textContent = 'Processing…';
 
   let geo = currentLocation;
   if (!geo.lat) {
     geo = await getCurrentLocation();
   }
 
-  let parsed = await extractInfoGPT(text);
-  if (!parsed) parsed = extractInfo(text, lines);
+  if (!parsed) {
+    // Vision failed → run OCR fallback
+    const result = await Tesseract.recognize(canvas, 'eng', {
+      logger: m => {
+        if (m.progress !== undefined) {
+          const percent = Math.floor(m.progress * 100);
+          statusDiv.textContent = `Scanning… ${percent}%`;
+          progressFill.style.width = percent + '%';
+        }
+      },
+      tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789:#&-.',
+      tessedit_pageseg_mode: 6
+    });
 
-  // If OCR/ChatGPT couldn’t find a name, use Vision’s answer
-  if ((!parsed.storeName || parsed.storeName === 'Not Found') && visionName) {
-    parsed.storeName = visionName.trim();
+    const { text, confidence, lines } = result.data;
+    console.log('OCR confidence', confidence);
+
+    statusDiv.textContent = 'Processing…';
+
+    parsed = await extractInfoGPT(text);
+    if (!parsed) parsed = extractInfo(text, lines);
   }
 
   let address = '';
