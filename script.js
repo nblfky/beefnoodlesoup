@@ -100,7 +100,27 @@ function renderTable() {
       <td>${scan.lat ?? 'Not Found'}</td>
       <td>${scan.lng ?? 'Not Found'}</td>
       <td>${scan.businessType || 'Not Found'}</td>
-      <td><button class="row-delete" aria-label="Delete row">🗑︎</button></td>`;
+      <td style="display:flex; gap:6px; justify-content:center;">
+        <button class="row-edit" aria-label="Edit row">✏️</button>
+        <button class="row-delete" aria-label="Delete row">🗑︎</button>
+      </td>`;
+
+        // attach edit handler
+    tr.querySelector('.row-edit').addEventListener('click', () => {
+      const s = scans[idx];
+      s.storeName = prompt('Store name:', s.storeName) ?? s.storeName;
+      s.unitNumber = prompt('Unit number:', s.unitNumber) ?? s.unitNumber;
+      s.address = prompt('Address:', s.address) ?? s.address;
+      const lat = prompt('Latitude:', s.lat);
+      const lng = prompt('Longitude:', s.lng);
+      if (lat !== null && lng !== null) {
+        s.lat = lat;
+        s.lng = lng;
+      }
+      s.businessType = prompt('Business type:', s.businessType) ?? s.businessType;
+      saveScans();
+      renderTable();
+    });
 
     // attach delete handler
     tr.querySelector('.row-delete').addEventListener('click', () => {
