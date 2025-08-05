@@ -100,7 +100,7 @@ function renderTable() {
       <td>${scan.lat ?? 'Not Found'}</td>
       <td>${scan.lng ?? 'Not Found'}</td>
       <td>${scan.businessType || 'Not Found'}</td>
-      <td><button class="row-delete" aria-label="Delete row">🗑️</button></td>`;
+      <td><button class="row-delete" aria-label="Delete row">🗑︎</button></td>`;
 
     // attach delete handler
     tr.querySelector('.row-delete').addEventListener('click', () => {
