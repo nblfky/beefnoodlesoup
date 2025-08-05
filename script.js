@@ -126,6 +126,8 @@ function renderTable() {
     tr.addEventListener('touchend', e => {
       const diff = e.changedTouches[0].clientX - startX;
       if (diff < -40) {
+        // Close any previously open rows
+        document.querySelectorAll('tr.show-delete').forEach(r => r.classList.remove('show-delete'));
         tr.classList.add('show-delete');
       } else if (diff > 40) {
         tr.classList.remove('show-delete');

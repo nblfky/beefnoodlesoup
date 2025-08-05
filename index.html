@@ -95,7 +95,7 @@
 
     /* Swipe-to-delete styles */
     tr.swipeable { position: relative; transition: transform .25s; }
-    tr.swipeable { transition: transform .25s; overflow: hidden; }
+    tr.swipeable { position: relative; overflow: visible; }
     .delete-btn {
       position: absolute;
       right: 0;
@@ -113,7 +113,7 @@
       transition: transform .25s;
     }
     tr.show-delete .delete-btn { transform: translateX(0); }
-    tr.show-delete { transform: translateX(-70px); }
+    
 
   </style>
 </head>
