@@ -112,6 +112,18 @@
       cursor:pointer;
     }
     .row-delete:active { opacity:0.85; }
+
+    .status-overlay {
+      position:absolute;
+      top:8px;
+      left:0;
+      width:100%;
+      text-align:center;
+      color:#fff;
+      font-size:0.9rem;
+      text-shadow:0 1px 2px rgba(0,0,0,.6);
+      pointer-events:none;
+    }
     
 
   </style>
@@ -125,6 +137,7 @@
     <div class="video-wrapper">
       <video id="camera" autoplay playsinline></video>
       <div id="progressBar"><div id="progressFill"></div></div>
+      <div id="status" class="status-overlay"></div>
       <button id="scanBtn" class="scan-btn">Scan</button>
     </div>
     <div class="card">
@@ -134,7 +147,6 @@
         <button id="clearBtn" class="btn">Clear</button>
         <input type="file" id="imageInput" accept="image/*" style="display:none" />
       </div>
-      <div id="status" class="muted"></div>
       <table id="resultsTable">
         <thead>
           <tr>
