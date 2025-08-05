@@ -92,6 +92,29 @@
     th, td { border-bottom:1px solid #eee; padding:0.45rem 0.3rem; font-size:0.85rem; }
     th { text-align:left; color:#555; font-weight:600; }
     tbody tr:nth-child(odd) { background:#fafafa; }
+
+    /* Swipe-to-delete styles */
+    tr.swipeable { position: relative; transition: transform .25s; }
+    tr.swipeable td { transition: transform .25s; }
+    .delete-btn {
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 70px;
+      background: #ff3b30;
+      color: #fff;
+      border: none;
+      font-size: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform: translateX(100%);
+      transition: transform .25s;
+    }
+    tr.show-delete .delete-btn { transform: translateX(0); }
+    tr.show-delete td { transform: translateX(-70px); }
+
   </style>
 </head>
 <body>
