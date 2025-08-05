@@ -356,7 +356,7 @@ async function performScanFromCanvas(canvas) {
   // Try Vision JSON extraction first
   let parsed = null;
   if (openaiApiKey) {
-    statusDiv.textContent = 'Analyzing with GPT-4o…';
+    statusDiv.textContent = 'Scanning…';
     parsed = await extractInfoVision(imageDataUrl);
     if (parsed) {
       console.log('Vision JSON:', parsed);
@@ -413,7 +413,9 @@ async function performScanFromCanvas(canvas) {
   scans.push(info);
   saveScans();
   renderTable();
-  statusDiv.textContent = '';
+  statusDiv.textContent = info.storeName && info.storeName !== 'Not Found'
+    ? 'Scanning is successful'
+    : 'Scanning failed, please try again';
   progressBar.style.display = 'none';
 }
 
