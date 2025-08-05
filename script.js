@@ -101,7 +101,7 @@ function renderTable() {
       <td>${scan.lng ?? 'Not Found'}</td>
       <td>${scan.businessType || 'Not Found'}</td>
       <td style="display:flex; gap:6px; justify-content:center;">
-        <button class="row-edit" aria-label="Edit row">✏️</button>
+        <button class="row-edit" aria-label="Edit row">✎</button>
         <button class="row-delete" aria-label="Delete row">🗑︎</button>
       </td>`;
 
