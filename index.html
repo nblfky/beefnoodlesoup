@@ -93,26 +93,16 @@
     th { text-align:left; color:#555; font-weight:600; }
     tbody tr:nth-child(odd) { background:#fafafa; }
 
-    /* Swipe-to-delete styles */
-    tr.swipeable { position: relative; transition: transform .25s; }
-    tr.swipeable { position: relative; overflow: visible; }
-    .delete-btn {
-      position: absolute;
-      right: 0;
-      top: 0;
-      bottom: 0;
-      width: 70px;
-      background: #ff3b30;
-      color: #fff;
-      border: none;
-      font-size: 0.75rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transform: translateX(100%);
-      transition: transform .25s;
+    .row-delete {
+      background:#ff3b30;
+      color:#fff;
+      border:none;
+      border-radius:6px;
+      padding:4px 8px;
+      font-size:0.75rem;
+      cursor:pointer;
     }
-    tr.show-delete .delete-btn { transform: translateX(0); }
+    .row-delete:active { opacity:0.85; }
     
 
   </style>
@@ -146,6 +136,7 @@
             <th>Lat</th>
             <th>Lng</th>
             <th>Type</th>
+            <th></th>
           </tr>
         </thead>
         <tbody></tbody>

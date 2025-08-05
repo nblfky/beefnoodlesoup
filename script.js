@@ -92,9 +92,6 @@ function renderTable() {
 
   scans.forEach((scan, idx) => {
     const tr = document.createElement('tr');
-    tr.classList.add('swipeable');
-    tr.dataset.index = idx;
-
     tr.innerHTML = `
       <td>${idx + 1}</td>
       <td>${scan.storeName || 'Not Found'}</td>
@@ -103,38 +100,14 @@ function renderTable() {
       <td>${scan.lat ?? 'Not Found'}</td>
       <td>${scan.lng ?? 'Not Found'}</td>
       <td>${scan.businessType || 'Not Found'}</td>
-    `;
+      <td><button class="row-delete">Delete</button></td>`;
 
-    // Delete button (revealed on swipe)
-    const delBtn = document.createElement('button');
-    delBtn.className = 'delete-btn';
-    delBtn.textContent = 'Delete';
-    delBtn.addEventListener('click', e => {
-      e.stopPropagation();
-      const i = parseInt(tr.dataset.index, 10);
-      scans.splice(i, 1);
+    // attach delete handler
+    tr.querySelector('.row-delete').addEventListener('click', () => {
+      scans.splice(idx, 1);
       saveScans();
       renderTable();
     });
-    tr.appendChild(delBtn);
-
-    // Basic swipe-left detection to reveal the delete button
-    let startX = 0;
-    tr.addEventListener('touchstart', e => {
-      startX = e.changedTouches[0].clientX;
-    });
-    tr.addEventListener('touchend', e => {
-      const diff = e.changedTouches[0].clientX - startX;
-      if (diff < -40) {
-        // Close any previously open rows
-        document.querySelectorAll('tr.show-delete').forEach(r => r.classList.remove('show-delete'));
-        tr.classList.add('show-delete');
-      } else if (diff > 40) {
-        tr.classList.remove('show-delete');
-      }
-    });
-    // Hide delete button on regular click
-    tr.addEventListener('click', () => tr.classList.remove('show-delete'));
 
     tableBody.appendChild(tr);
   });
