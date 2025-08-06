@@ -41,8 +41,12 @@
     .video-wrapper { flex: 1; position: relative; }
     video { width: 100%; height: 100%; object-fit: cover; background: #000; }
     .video-wrapper {
-      height: 60vh;          
-      max-height: 420px;     
+      height: 60vh;
+      max-height: 420px;
+      margin: 0 1rem;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 2px 12px rgba(0,0,0,.12);
     }
     video {
        height: 100%; }
@@ -131,6 +135,32 @@
     }
     
 
+      /* Loading overlay */
+    .loading-overlay {
+      position:absolute;
+      z-index:1;
+      top:0;
+      left:0;
+      width:100%;
+      height:100%;
+      background:rgba(0,0,0,0.4);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      pointer-events:none;
+      backdrop-filter: blur(2px);
+    }
+    .loader {
+      width:60px;
+      height:60px;
+      border:6px solid rgba(255,255,255,0.3);
+      border-top:6px solid var(--primary);
+      border-radius:50%;
+      animation:spin 1s linear infinite;
+    }
+    @keyframes spin {
+      to { transform:rotate(360deg); }
+    }
   </style>
 </head>
 <body>
@@ -143,6 +173,9 @@
       <video id="camera" autoplay playsinline></video>
       <div id="progressBar"><div id="progressFill"></div></div>
       <div id="status" class="status-overlay"></div>
+      <div id="loadingOverlay" class="loading-overlay" style="visibility:hidden;">
+        <div class="loader"></div>
+      </div>
       <button id="scanBtn" class="scan-btn">Scan</button>
     </div>
     <div class="card">

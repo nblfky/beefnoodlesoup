@@ -66,6 +66,7 @@ const statusDiv = document.getElementById('status');
 const tableBody = document.querySelector('#resultsTable tbody');
 const progressBar = document.getElementById('progressBar');
 const progressFill = document.getElementById('progressFill');
+const loadingOverlay = document.getElementById('loadingOverlay');
 // --- NEW: Image upload elements ---
 const uploadBtn = document.getElementById('uploadBtn');
 const imageInput = document.getElementById('imageInput');
@@ -100,10 +101,10 @@ function renderTable() {
       <td>${scan.lat ?? 'Not Found'}</td>
       <td>${scan.lng ?? 'Not Found'}</td>
       <td>${scan.businessType || 'Not Found'}</td>
-      <td class="remarks-cell" style="text-align:center; width:50px;">
+      <td class="remarks-cell" style="display:flex; align-items:center; justify-content:center; width:50px;">
         <button class="row-remark" aria-label="Add or view remark">📝</button>
       </td>
-      <td style="display:flex; gap:6px; justify-content:center; min-width:72px;">
+      <td style="display:flex; gap:6px; justify-content:center; align-items:center; min-width:72px;">
         <button class="row-edit" aria-label="Edit row">✎</button>
         <button class="row-delete" aria-label="Delete row">🗑︎</button>
       </td>`;
@@ -138,6 +139,7 @@ function renderTable() {
 
     // attach delete handler
     tr.querySelector('.row-delete').addEventListener('click', () => {
+      if (!confirm('Delete this entry?')) return;
       scans.splice(idx, 1);
       saveScans();
       renderTable();
@@ -362,6 +364,7 @@ initCamera();
 // --- Helper: run OCR + processing on any canvas source (camera or uploaded) ---
 async function performScanFromCanvas(canvas) {
   statusDiv.textContent = 'Scanning…';
+  if (loadingOverlay) loadingOverlay.style.visibility = 'visible';
   progressBar.style.display = 'block';
   progressFill.style.width = '0%';
 
@@ -431,6 +434,7 @@ async function performScanFromCanvas(canvas) {
     ? 'Scanning is successful'
     : 'Scanning failed, please try again';
   progressBar.style.display = 'none';
+  if (loadingOverlay) loadingOverlay.style.visibility = 'hidden';
 }
 
 // Scan button handler
