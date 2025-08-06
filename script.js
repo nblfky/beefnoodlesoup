@@ -100,10 +100,10 @@ function renderTable() {
       <td>${scan.lat ?? 'Not Found'}</td>
       <td>${scan.lng ?? 'Not Found'}</td>
       <td>${scan.businessType || 'Not Found'}</td>
-      <td style="text-align:center;">
+      <td class="remarks-cell" style="text-align:center; width:50px;">
         <button class="row-remark" aria-label="Add or view remark">📝</button>
       </td>
-      <td style="display:flex; gap:6px; justify-content:center;">
+      <td style="display:flex; gap:6px; justify-content:center; min-width:72px;">
         <button class="row-edit" aria-label="Edit row">✎</button>
         <button class="row-delete" aria-label="Delete row">🗑︎</button>
       </td>`;
