@@ -91,6 +91,12 @@ function renderTable() {
   if (!tableBody) return;
   tableBody.innerHTML = '';
 
+  function resumeCamera() {
+    if (video && video.srcObject && video.paused) {
+      video.play().catch(()=>{});
+    }
+  }
+
   scans.forEach((scan, idx) => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -118,6 +124,7 @@ function renderTable() {
         saveScans();
         renderTable();
       }
+      resumeCamera();
     });
 
     // attach edit handler
@@ -135,14 +142,16 @@ function renderTable() {
       s.businessType = prompt('Category:', s.businessType) ?? s.businessType;
       saveScans();
       renderTable();
+      resumeCamera();
     });
 
     // attach delete handler
     tr.querySelector('.row-delete').addEventListener('click', () => {
-      if (!confirm('Delete this entry?')) return;
+      if (!confirm('Delete this entry?')) { resumeCamera(); return; }
       scans.splice(idx, 1);
       saveScans();
       renderTable();
+      resumeCamera();
     });
 
     tableBody.appendChild(tr);
