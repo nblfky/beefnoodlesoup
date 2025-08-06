@@ -45,7 +45,7 @@ async function extractInfoVision(imageUrl) {
         {
           role: 'user',
           content:
-            'Extract JSON with keys: storeName, unitNumber, address, businessType. Use "Not Found" if unknown.'
+            'Extract JSON with keys: storeName, unitNumber, address, businessType. For businessType, choose one of: art, attractions, auto, beauty services, commercial building, education, essentials, financial, food and beverage, general merchandise, government building, healthcare, home services, hotel, industrial, local services, mass media, nightlife, physical feature, professional services, religious organization, residential, sports and fitness, travel. Use "Not Found" if unknown.'
         },
         {
           role: 'user',
@@ -100,12 +100,26 @@ function renderTable() {
       <td>${scan.lat ?? 'Not Found'}</td>
       <td>${scan.lng ?? 'Not Found'}</td>
       <td>${scan.businessType || 'Not Found'}</td>
+      <td style="text-align:center;">
+        <button class="row-remark" aria-label="Add or view remark">📝</button>
+      </td>
       <td style="display:flex; gap:6px; justify-content:center;">
         <button class="row-edit" aria-label="Edit row">✎</button>
         <button class="row-delete" aria-label="Delete row">🗑︎</button>
       </td>`;
 
-        // attach edit handler
+        // attach remark handler
+    tr.querySelector('.row-remark').addEventListener('click', () => {
+      const s = scans[idx];
+      const r = prompt('Remark:', s.remark || '');
+      if (r !== null) {
+        s.remark = r;
+        saveScans();
+        renderTable();
+      }
+    });
+
+    // attach edit handler
     tr.querySelector('.row-edit').addEventListener('click', () => {
       const s = scans[idx];
       s.storeName = prompt('Store name:', s.storeName) ?? s.storeName;
@@ -117,7 +131,7 @@ function renderTable() {
         s.lat = lat;
         s.lng = lng;
       }
-      s.businessType = prompt('Business type:', s.businessType) ?? s.businessType;
+      s.businessType = prompt('Category:', s.businessType) ?? s.businessType;
       saveScans();
       renderTable();
     });
@@ -151,10 +165,10 @@ document.getElementById('exportBtn').addEventListener('click', () => {
     alert('No data to export');
     return;
   }
-  const headers = ['Store Name','Unit','Address','Lat','Lng','Type'];
+  const headers = ['Store Name','Unit','Address','Lat','Lng','Category','Remarks'];
   const csvRows = [headers.join(',')];
   scans.forEach(s => {
-    const row = [s.storeName, s.unitNumber, s.address, s.lat, s.lng, s.businessType]
+    const row = [s.storeName, s.unitNumber, s.address, s.lat, s.lng, s.businessType, s.remark || '']
       .map(v => '"' + (v || '').replace(/"/g,'""') + '"').join(',');
     csvRows.push(row);
   });
@@ -284,7 +298,7 @@ async function extractInfoGPT(rawText) {
         temperature: 0,
         messages: [
           { role: 'system', content: 'You extract structured data from storefront OCR.' },
-          { role: 'user', content: `Extract JSON with keys: storeName, unitNumber, address, businessType. Use "Not Found" if unknown. OCR: """${rawText}"""` }
+          { role: 'user', content: `Extract JSON with keys: storeName, unitNumber, address, businessType. For businessType, choose one of: art, attractions, auto, beauty services, commercial building, education, essentials, financial, food and beverage, general merchandise, government building, healthcare, home services, hotel, industrial, local services, mass media, nightlife, physical feature, professional services, religious organization, residential, sports and fitness, travel. Use "Not Found" if unknown. OCR: """${rawText}"""` }
         ]
       })
     });
@@ -523,11 +537,16 @@ function extractInfo(rawText, ocrLines = []) {
 
   // Guess business category based on keywords
   const categories = {
-    'restaurant|cafe|café|bakery|food': 'F&B',
-    'salon|spa|hair|beauty|nail': 'Beauty',
-    'clinic|medical|dental|pharmacy': 'Healthcare',
-    'book|stationery|gift|toy': 'Retail',
-    'gym|fitness|yoga': 'Fitness'
+    'restaurant|restaurants|cafe|café|bakery|eatery|food|diner': 'food and beverage',
+    'salon|spa|hair|beauty|nail': 'beauty services',
+    'clinic|medical|dental|pharmacy|hospital': 'healthcare',
+    'book|stationery|gift|toy|retail|shop': 'general merchandise',
+    'gym|fitness|yoga|sport': 'sports and fitness',
+    'school|college|university|academy|learning': 'education',
+    'bank|atm|finance|financial': 'financial',
+    'hotel|motel|inn|resort': 'hotel',
+    'bar|pub|club|nightlife': 'nightlife',
+    'car|auto|automotive|vehicle|garage': 'auto'
   };
 
   let businessType = 'Unknown';
@@ -608,6 +627,9 @@ async function loadCompanyCategories() {
 async function mapToCompanyCategory(freeText = '') {
   if (!freeText || freeText === 'Unknown' || freeText === 'Not Found') return freeText;
   const txt = freeText.toLowerCase().trim();
+  // If value already matches one of our high-level categories, return as-is
+  const allowed = ['art','attractions','auto','beauty services','commercial building','education','essentials','financial','food and beverage','general merchandise','government building','healthcare','home services','hotel','industrial','local services','mass media','nightlife','physical feature','professional services','religious organization','residential','sports and fitness','travel'];
+  if (allowed.includes(txt)) return allowed.find(cat => cat === txt);
   await loadCompanyCategories();
   if (!companyCategories.length) return freeText;
 
