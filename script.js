@@ -156,6 +156,7 @@ function renderTable() {
         <input type="text" class="remarks-input" value="${remarksValue}" 
                placeholder="Add remarks..." data-index="${idx}">
       </td>
+      <td class="photo-cell">${scan.photo ? `<img src="${scan.photo}" class="photo-thumb" alt="Photo preview">` : ''}</td>
       <td class="actions-cell">
         <button class="edit-btn" data-index="${idx}" title="Edit Row">
           ✏️ Edit
@@ -185,6 +186,7 @@ function renderTable() {
     // Add event listeners for action buttons
     const editBtn = tr.querySelector('.edit-btn');
     const deleteBtn = tr.querySelector('.delete-btn');
+    const thumb = tr.querySelector('.photo-thumb');
     
     editBtn.addEventListener('click', (e) => {
       e.preventDefault();
@@ -199,6 +201,15 @@ function renderTable() {
       const index = parseInt(e.target.dataset.index);
       deleteRow(index);
     });
+
+    if (thumb) {
+      thumb.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const src = scans[idx] && scans[idx].photo;
+        if (src) window.open(src, '_blank');
+      });
+    }
   });
 }
 
@@ -932,6 +943,24 @@ function canvasToBlob(canvas, quality = 0.95) {
   });
 }
 
+function canvasToPreviewDataUrl(sourceCanvas, maxWidth = 640, quality = 0.85) {
+  const width = sourceCanvas.width;
+  const height = sourceCanvas.height;
+  if (!width || !height) return '';
+  if (width <= maxWidth) {
+    return sourceCanvas.toDataURL('image/jpeg', quality);
+  }
+  const scale = maxWidth / width;
+  const targetWidth = Math.round(width * scale);
+  const targetHeight = Math.round(height * scale);
+  const preview = document.createElement('canvas');
+  preview.width = targetWidth;
+  preview.height = targetHeight;
+  const ctx = preview.getContext('2d');
+  ctx.drawImage(sourceCanvas, 0, 0, targetWidth, targetHeight);
+  return preview.toDataURL('image/jpeg', quality);
+}
+
 async function saveImageToGallery(blob, filename, shareTitle = 'Storefront Scan') {
   try {
     const file = new File([blob], filename, { type: 'image/jpeg' });
@@ -1053,6 +1082,7 @@ async function performScanFromCanvas(canvas) {
   progressFill.style.width = '0%';
 
   const imageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+  const previewDataUrl = canvasToPreviewDataUrl(canvas, 640, 0.85);
 
   // Try Vision JSON extraction first
   let parsed = null;
@@ -1129,7 +1159,7 @@ async function performScanFromCanvas(canvas) {
   }
 
   const info = Object.assign(
-    { lat: finalLat, lng: finalLng, address: address },
+    { lat: finalLat, lng: finalLng, address: address, photo: previewDataUrl },
     parsed
   );
 
