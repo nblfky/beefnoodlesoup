@@ -1201,16 +1201,6 @@ document.getElementById('scanBtn').addEventListener('click', async () => {
   canvas.height = video.videoHeight;
   const ctx = canvas.getContext('2d');
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-  // Save image to device gallery (via share sheet) without blocking the scan flow
-  try {
-    const blob = await canvasToBlob(canvas, 0.95);
-    const filename = buildPhotoFilename(currentLocation.lat, currentLocation.lng);
-    // Fire-and-forget to avoid blocking OCR/vision processing
-    saveImageToGallery(blob, filename).catch(() => {});
-  } catch (_) {
-    /* ignore save errors and continue scanning */
-  }
-
   await performScanFromCanvas(canvas);
 });
 
