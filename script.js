@@ -207,7 +207,14 @@ function renderTable() {
         e.preventDefault();
         e.stopPropagation();
         const src = scans[idx] && scans[idx].photo;
-        if (src) window.open(src, '_blank');
+        if (!src) return;
+        const modal = document.createElement('div');
+        modal.className = 'image-modal';
+        modal.innerHTML = `<img src="${src}" alt="Preview" />`;
+        document.body.appendChild(modal);
+        const close = () => { if (modal.parentNode) modal.parentNode.removeChild(modal); };
+        modal.addEventListener('click', close);
+        modal.addEventListener('touchend', close, { passive: true });
       });
     }
   });
@@ -328,26 +335,41 @@ document.getElementById('clearBtn').addEventListener('click', () => {
   }
 });
 
-document.getElementById('exportBtn').addEventListener('click', () => {
+document.getElementById('exportBtn').addEventListener('click', async () => {
   if (!scans.length) {
     alert('No data to export');
     return;
   }
-  const headers = ['Store Name','Unit','Address','Lat','Lng','Category','Remarks'];
+  const headers = ['Store Name','Unit','Address','Lat','Lng','Category','Remarks','Photo'];
   const csvRows = [headers.join(',')];
   scans.forEach(s => {
-    const row = [s.storeName, s.unitNumber, s.address, s.lat, s.lng, s.category, s.remarks || '']
+    const photoFlag = s.photo ? 'Yes' : 'No';
+    const row = [s.storeName, s.unitNumber, s.address, s.lat, s.lng, s.category, s.remarks || '', photoFlag]
       .map(v => '"' + (v || '').replace(/"/g,'""') + '"').join(',');
     csvRows.push(row);
   });
-  const blob = new Blob([csvRows.join('\n')], {type:'text/csv'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'storefront_scans.csv';
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 0);
+  try {
+    const blob = new Blob([csvRows.join('\n')], {type:'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'storefront_scans.csv';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 0);
+  } catch (err) {
+    try {
+      // iOS fallback: try share sheet for the CSV file
+      const file = new File([csvRows.join('\n')], 'storefront_scans.csv', { type: 'text/csv' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'Export CSV' });
+      } else {
+        alert('Unable to export CSV on this browser.');
+      }
+    } catch (_) {
+      alert('Unable to export CSV on this browser.');
+    }
+  }
 });
 
 // --- Manual store location search ---
@@ -961,34 +983,6 @@ function canvasToPreviewDataUrl(sourceCanvas, maxWidth = 640, quality = 0.85) {
   return preview.toDataURL('image/jpeg', quality);
 }
 
-async function saveImageToGallery(blob, filename, shareTitle = 'Storefront Scan') {
-  try {
-    const file = new File([blob], filename, { type: 'image/jpeg' });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title: shareTitle, text: 'Captured storefront photo' });
-      console.log('Shared image via system share sheet');
-      return true;
-    }
-  } catch (err) {
-    console.warn('Share to gallery failed, falling back to download', err);
-  }
-
-  // Fallback: trigger a download (works on desktop and most mobile browsers)
-  try {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 0);
-    console.log('Image download triggered');
-    return true;
-  } catch (e) {
-    console.warn('Download fallback failed', e);
-    return false;
-  }
-}
 
 // --- Duplicate Detection Functions ---
 function isDuplicateStore(newStore) {

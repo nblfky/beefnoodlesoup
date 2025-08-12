@@ -532,6 +532,25 @@ th:nth-child(10), td:nth-child(10) { width: 100px; }  /* ACTIONS */
   cursor: pointer;
 }
 
+/* Fullscreen image preview modal */
+.image-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(2px);
+}
+
+.image-modal img {
+  max-width: 92vw;
+  max-height: 86vh;
+  border-radius: 10px;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.5);
+}
+
     /* Loading and animation improvements */
     @keyframes pulse {
       0%, 100% { opacity: 1; }
