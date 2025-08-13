@@ -1245,33 +1245,57 @@ async function downloadAllImages() {
       return;
     }
 
-    if (typeof JSZip === 'undefined') {
-      alert('ZIP library not loaded. Please check your connection and try again.');
-      return;
+    // Detect iOS/iPadOS (including iPadOS masquerading as Mac)
+    const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+    // If iOS supports Web Share with files, offer Save to Photos via Share Sheet
+    if (isiOS && navigator.canShare && navigator.share) {
+      // Helper to convert data URL to Blob
+      const dataUrlToBlob = (dataUrl) => {
+        const [meta, b64] = dataUrl.split(',');
+        const contentType = (meta.match(/data:(.*?);base64/) || [])[1] || 'image/jpeg';
+        const byteChars = atob(b64);
+        const byteNumbers = new Array(byteChars.length);
+        for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+        const byteArray = new Uint8Array(byteNumbers);
+        return new Blob([byteArray], { type: contentType });
+      };
+
+      const files = images.map(img => {
+        const safeName = (img.name || 'Store').replace(/[^a-z0-9\- _\.]/gi, '_').slice(0, 80) || 'Store';
+        const fileName = String(img.idx).padStart(3, '0') + ' - ' + safeName + '.jpg';
+        const blob = dataUrlToBlob(img.dataUrl);
+        return new File([blob], fileName, { type: 'image/jpeg' });
+      });
+
+      // iOS may fail on too many/large files. Share in small batches.
+      const chunk = (arr, size) => arr.reduce((acc, _, i) => (i % size ? acc : [...acc, arr.slice(i, i + size)]), []);
+      const batches = chunk(files, 10); // 10 files per share as a safe default
+
+      for (const batch of batches) {
+        if (navigator.canShare({ files: batch })) {
+          try {
+            await navigator.share({ files: batch, title: 'Storefront Images', text: 'Save images to Photos' });
+          } catch (err) {
+            if (err && err.name === 'AbortError') {
+              // User cancelled share sheet; stop further batches
+              return;
+            }
+            console.warn('Share failed, falling back to ZIP for this batch:', err);
+            // Fall back to ZIP for this batch
+            await downloadImagesAsZip(batch);
+          }
+        } else {
+          // Device cannot share this batch; fall back to ZIP
+          await downloadImagesAsZip(batch);
+        }
+      }
+      return; // iOS handled via share
     }
 
-    const zip = new JSZip();
-
-    // Helper to convert data URL to Uint8Array
-    function dataUrlToUint8Array(dataUrl) {
-      const parts = dataUrl.split(',');
-      const base64 = parts[1];
-      const binary = atob(base64);
-      const len = binary.length;
-      const bytes = new Uint8Array(len);
-      for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
-      return bytes;
-    }
-
-    images.forEach((img, index) => {
-      const safeName = img.name.replace(/[^a-z0-9\- _\.]/gi, '_').slice(0, 80) || 'Store';
-      const fileName = String(img.idx).padStart(3, '0') + ' - ' + safeName + '.jpg';
-      const bytes = dataUrlToUint8Array(img.dataUrl);
-      zip.file(fileName, bytes);
-    });
-
-    const blob = await zip.generateAsync({ type: 'blob' });
-    triggerDownloadBlob(blob, 'storefront_images.zip');
+    // Non-iOS or missing Web Share: zip and download
+    await downloadImagesAsZip(images);
   } catch (err) {
     console.error('Failed to download images:', err);
     alert('Failed to download images. Check console for details.');
@@ -1280,6 +1304,46 @@ async function downloadAllImages() {
 
 if (downloadImagesBtn) {
   downloadImagesBtn.addEventListener('click', downloadAllImages);
+}
+
+// Helper: ZIP a set of images and download
+async function downloadImagesAsZip(items) {
+  // Normalize items: could be array of File or our {idx,name,dataUrl}
+  const isFile = items.length && items[0] instanceof File;
+
+  if (typeof JSZip === 'undefined') {
+    alert('ZIP library not loaded. Please check your connection and try again.');
+    return;
+  }
+
+  const zip = new JSZip();
+
+  if (isFile) {
+    items.forEach((file, index) => {
+      const name = file.name || `image_${index + 1}.jpg`;
+      zip.file(name, file);
+    });
+  } else {
+    const dataUrlToUint8Array = (dataUrl) => {
+      const parts = dataUrl.split(',');
+      const base64 = parts[1];
+      const binary = atob(base64);
+      const len = binary.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
+      return bytes;
+    };
+
+    items.forEach((img) => {
+      const safeName = (img.name || 'Store').replace(/[^a-z0-9\- _\.]/gi, '_').slice(0, 80) || 'Store';
+      const fileName = String(img.idx).padStart(3, '0') + ' - ' + safeName + '.jpg';
+      const bytes = dataUrlToUint8Array(img.dataUrl);
+      zip.file(fileName, bytes);
+    });
+  }
+
+  const blob = await zip.generateAsync({ type: 'blob' });
+  triggerDownloadBlob(blob, 'storefront_images.zip');
 }
 
 // Extract structured information from raw OCR text
