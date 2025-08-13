@@ -1,5 +1,7 @@
 // Initialize camera feed
 import OpenAI from 'https://esm.sh/openai?bundle';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 
 // --- OpenAI Vision setup ---
 let openaiClient = null;
@@ -2420,3 +2422,22 @@ function addMapInteractionHandlers() {
 
 // Make functions globally available
 window.removeRoutePoint = removeRoutePoint; 
+
+function escapeCsv(v){ if(v==null) return ''; const s=String(v).replace(/"/g,'""'); return /[",\n]/.test(s)?`"${s}"`:s; }
+function stripPrefix(b64){ return b64.replace(/^data:image\/\w+;base64,/, ''); }
+
+async function exportZip(rows){
+  const zip = new JSZip();
+  const images = zip.folder('images');
+  const csv = ['id,storeName,image_filename'];
+
+  for (const r of rows) {
+    const fn = `images/${r.id}.png`;
+    csv.push(`${escapeCsv(r.id)},${escapeCsv(r.storeName)},${escapeCsv(fn)}`);
+    images.file(`${r.id}.png`, stripPrefix(r.imageBase64), { base64: true });
+  }
+
+  zip.file('data.csv', csv.join('\n'));
+  const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+  saveAs(blob, 'export.zip');
+}
