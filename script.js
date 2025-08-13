@@ -83,6 +83,7 @@ const scanningText = document.querySelector('.scanning-text');
 const uploadBtn = document.getElementById('uploadBtn');
 const imageInput = document.getElementById('imageInput');
 const toggleCaptureEl = document.getElementById('toggleCapture');
+const downloadImagesBtn = document.getElementById('downloadImagesBtn');
 // --- NEW: Zoom control elements ---
 const zoomInBtn = document.getElementById('zoomIn');
 const zoomOutBtn = document.getElementById('zoomOut');
@@ -1230,6 +1231,55 @@ if (uploadBtn && imageInput) {
     img.src = URL.createObjectURL(file);
     imageInput.value = '';
   });
+}
+
+// Download all captured images as a zip
+async function downloadAllImages() {
+  try {
+    const images = scans
+      .map((s, i) => ({ idx: i + 1, name: (s.storeName || 'Store').toString().trim(), dataUrl: s.image }))
+      .filter(x => x.dataUrl && /^data:image\//.test(x.dataUrl));
+
+    if (!images.length) {
+      alert('No images to download');
+      return;
+    }
+
+    if (typeof JSZip === 'undefined') {
+      alert('ZIP library not loaded. Please check your connection and try again.');
+      return;
+    }
+
+    const zip = new JSZip();
+
+    // Helper to convert data URL to Uint8Array
+    function dataUrlToUint8Array(dataUrl) {
+      const parts = dataUrl.split(',');
+      const base64 = parts[1];
+      const binary = atob(base64);
+      const len = binary.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
+      return bytes;
+    }
+
+    images.forEach((img, index) => {
+      const safeName = img.name.replace(/[^a-z0-9\- _\.]/gi, '_').slice(0, 80) || 'Store';
+      const fileName = String(img.idx).padStart(3, '0') + ' - ' + safeName + '.jpg';
+      const bytes = dataUrlToUint8Array(img.dataUrl);
+      zip.file(fileName, bytes);
+    });
+
+    const blob = await zip.generateAsync({ type: 'blob' });
+    triggerDownloadBlob(blob, 'storefront_images.zip');
+  } catch (err) {
+    console.error('Failed to download images:', err);
+    alert('Failed to download images. Check console for details.');
+  }
+}
+
+if (downloadImagesBtn) {
+  downloadImagesBtn.addEventListener('click', downloadAllImages);
 }
 
 // Extract structured information from raw OCR text

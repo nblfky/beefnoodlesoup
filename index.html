@@ -80,6 +80,7 @@
       <div class="toolbar">
         <button id="exportBtn" class="btn">Export CSV</button>
         <button id="uploadBtn" class="btn">Upload Image</button>
+          <button id="downloadImagesBtn" class="btn">Download Images</button>
         <button id="clearBtn" class="btn">Clear</button>
           <label class="toggle-capture"><input type="checkbox" id="toggleCapture" checked> Capture Image</label>
         <input type="file" id="imageInput" accept="image/*" style="display:none" />
@@ -119,6 +120,8 @@
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
   <!-- Spell correction library -->
   <script src="https://cdn.jsdelivr.net/npm/didyoumean2@3/dist/didyoumean2.min.js"></script>
+   <!-- ZIP library for bulk image download -->
+   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <!-- App logic (ESM) -->
   <script type="module" src="script.js"></script>
 </body>
