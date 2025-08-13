@@ -341,53 +341,92 @@ document.getElementById('clearBtn').addEventListener('click', () => {
   }
 });
 
-document.getElementById('exportBtn').addEventListener('click', () => {
+function triggerDownloadBlob(blob, filename) {
+  // IE 10+
+  if (window.navigator && typeof window.navigator.msSaveBlob === 'function') {
+    window.navigator.msSaveBlob(blob, filename);
+    return true;
+  }
   try {
-    if (!scans.length) {
-      alert('No data to export');
-      return;
-    }
-
-    const headers = ['Store Name','Unit','Address','Lat','Lng','Category','Remarks'];
-    const csvRows = [headers.join(',')];
-
-    scans.forEach(s => {
-      const row = [
-        s.storeName,
-        s.unitNumber,
-        s.address,
-        s.lat,
-        s.lng,
-        s.category,
-        s.remarks || ''
-      ]
-        .map(v => '"' + (v || '').replace(/"/g,'""') + '"').join(',');
-      csvRows.push(row);
-    });
-
-    const csvContent = '\ufeff' + csvRows.join('\r\n'); // BOM + CRLF for Excel
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-
-    // IE 10+ fallback
-    if (navigator.msSaveBlob) {
-      navigator.msSaveBlob(blob, 'storefront_scans.csv');
-      return;
-    }
-
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'storefront_scans.csv';
+    a.download = filename;
     a.style.display = 'none';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 0);
-  } catch (err) {
-    console.error('CSV export failed:', err);
-    alert('CSV export failed. Check console for details.');
+    return true;
+  } catch (_) {
+    return false;
   }
-});
+}
+
+function triggerDownloadDataUrl(dataUrl, filename) {
+  try {
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = filename;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function exportCsv() {
+  if (!scans.length) {
+    alert('No data to export');
+    return;
+  }
+
+  const headers = ['Store Name','Unit','Address','Lat','Lng','Category','Remarks'];
+  const csvRows = [headers.join(',')];
+
+  scans.forEach(s => {
+    const row = [
+      s.storeName,
+      s.unitNumber,
+      s.address,
+      s.lat,
+      s.lng,
+      s.category,
+      s.remarks || ''
+    ]
+      .map(v => '"' + (v || '').toString().replace(/"/g,'""') + '"').join(',');
+    csvRows.push(row);
+  });
+
+  const csvContent = '\ufeff' + csvRows.join('\r\n'); // BOM + CRLF
+
+  // Try Blob first
+  try {
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    if (triggerDownloadBlob(blob, 'storefront_scans.csv')) return;
+  } catch (err) {
+    console.warn('Blob export failed, will try data URL', err);
+  }
+
+  // Fallback: data URL
+  const dataUrl = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
+  if (triggerDownloadDataUrl(dataUrl, 'storefront_scans.csv')) return;
+
+  alert('CSV export failed. Please try a different browser.');
+}
+
+const exportBtnEl = document.getElementById('exportBtn');
+if (exportBtnEl) {
+  exportBtnEl.addEventListener('click', exportCsv);
+} else {
+  document.addEventListener('DOMContentLoaded', () => {
+    const el = document.getElementById('exportBtn');
+    if (el) el.addEventListener('click', exportCsv);
+  });
+}
 
 // --- Manual store location search ---
 const storeSearchInput = document.getElementById('storeSearchInput');
