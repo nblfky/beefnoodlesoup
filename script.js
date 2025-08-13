@@ -1,18 +1,28 @@
 // Initialize camera feed
-import OpenAI from 'https://esm.sh/openai?bundle';
+// Note: dynamically import OpenAI SDK to avoid breaking the whole app if CDN fails
 
 // --- OpenAI Vision setup ---
 let openaiClient = null;
-function getOpenAIClient() {
+let OpenAIConstructor = null;
+async function getOpenAIClient() {
   if (!openaiApiKey) return null;
   if (openaiClient) return openaiClient;
-  openaiClient = new OpenAI({ apiKey: openaiApiKey, dangerouslyAllowBrowser: true });
-  return openaiClient;
+  try {
+    if (!OpenAIConstructor) {
+      const mod = await import('https://esm.sh/openai?bundle');
+      OpenAIConstructor = mod?.default || mod;
+    }
+    openaiClient = new OpenAIConstructor({ apiKey: openaiApiKey, dangerouslyAllowBrowser: true });
+    return openaiClient;
+  } catch (err) {
+    console.warn('Failed to load OpenAI SDK', err);
+    return null;
+  }
 }
 
 // Analyse an image with GPT-4o Vision style prompt. Accepts a question and a data-URL or remote image URL.
 async function askImageQuestion(question, imageUrl) {
-  const client = getOpenAIClient();
+  const client = await getOpenAIClient();
   if (!client) return null;
   try {
     const resp = await client.responses.create({
@@ -36,7 +46,7 @@ async function askImageQuestion(question, imageUrl) {
 
 // Extract structured JSON directly from an image using GPT-4o Vision
 async function extractInfoVision(imageUrl) {
-  const client = getOpenAIClient();
+  const client = await getOpenAIClient();
   if (!client) return null;
   try {
     const resp = await client.responses.create({
@@ -322,33 +332,51 @@ document.getElementById('clearBtn').addEventListener('click', () => {
 });
 
 document.getElementById('exportBtn').addEventListener('click', () => {
-  if (!scans.length) {
-    alert('No data to export');
-    return;
+  try {
+    if (!scans.length) {
+      alert('No data to export');
+      return;
+    }
+
+    const headers = ['Store Name','Unit','Address','Lat','Lng','Category','Remarks'];
+    const csvRows = [headers.join(',')];
+
+    scans.forEach(s => {
+      const row = [
+        s.storeName,
+        s.unitNumber,
+        s.address,
+        s.lat,
+        s.lng,
+        s.category,
+        s.remarks || ''
+      ]
+        .map(v => '"' + (v || '').replace(/"/g,'""') + '"').join(',');
+      csvRows.push(row);
+    });
+
+    const csvContent = '\ufeff' + csvRows.join('\r\n'); // BOM + CRLF for Excel
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+
+    // IE 10+ fallback
+    if (navigator.msSaveBlob) {
+      navigator.msSaveBlob(blob, 'storefront_scans.csv');
+      return;
+    }
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'storefront_scans.csv';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  } catch (err) {
+    console.error('CSV export failed:', err);
+    alert('CSV export failed. Check console for details.');
   }
-  const headers = ['Store Name','Unit','Address','Lat','Lng','Category','Remarks'];
-  const csvRows = [headers.join(',')];
-  scans.forEach(s => {
-    const row = [
-      s.storeName,
-      s.unitNumber,
-      s.address,
-      s.lat,
-      s.lng,
-      s.category,
-      s.remarks || ''
-    ]
-      .map(v => '"' + (v || '').replace(/"/g,'""') + '"').join(',');
-    csvRows.push(row);
-  });
-  const blob = new Blob([csvRows.join('\n')], {type:'text/csv'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'storefront_scans.csv';
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 0);
 });
 
 // --- Manual store location search ---
