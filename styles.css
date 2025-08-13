@@ -332,7 +332,7 @@
       overflow: hidden;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
       table-layout: fixed; /* Fixed layout for consistent column sizing */
-      min-width: 1040px; /* Accommodate all columns including photo */
+      min-width: 950px; /* Accommodate all columns including remarks and actions */
     }
     
     th, td { 
@@ -355,8 +355,7 @@ th:nth-child(5), td:nth-child(5) { width: 80px; }   /* LAT */
 th:nth-child(6), td:nth-child(6) { width: 80px; }   /* LNG */
 th:nth-child(7), td:nth-child(7) { width: 70px; }   /* CATEGORY */
 th:nth-child(8), td:nth-child(8) { width: 120px; }  /* REMARKS */
-th:nth-child(9), td:nth-child(9) { width: 90px; }   /* PHOTO */
-th:nth-child(10), td:nth-child(10) { width: 140px; }  /* ACTIONS */
+th:nth-child(9), td:nth-child(9) { width: 140px; }  /* ACTIONS */
     
     th { 
       background: var(--bg-secondary);
@@ -459,7 +458,7 @@ th:nth-child(10), td:nth-child(10) { width: 140px; }  /* ACTIONS */
     /* Removed old swipe functionality */
 
     /* Mobile-specific fixed column widths */
-    table { min-width: 940px; }
+    table { min-width: 850px; }
     th:nth-child(1), td:nth-child(1) { width: 35px; }   /* # */
 th:nth-child(2), td:nth-child(2) { width: 100px; }  /* STORE NAME */
 th:nth-child(3), td:nth-child(3) { width: 50px; }   /* UNIT */
@@ -468,8 +467,7 @@ th:nth-child(5), td:nth-child(5) { width: 70px; }   /* LAT */
 th:nth-child(6), td:nth-child(6) { width: 70px; }   /* LNG */
 th:nth-child(7), td:nth-child(7) { width: 60px; }   /* CATEGORY */
 th:nth-child(8), td:nth-child(8) { width: 100px; }  /* REMARKS */
-th:nth-child(9), td:nth-child(9) { width: 80px; }   /* PHOTO */
-th:nth-child(10), td:nth-child(10) { width: 120px; }  /* ACTIONS */
+th:nth-child(9), td:nth-child(9) { width: 120px; }  /* ACTIONS */
     }
 
     /* Extra small phones */
@@ -505,7 +503,7 @@ th:nth-child(10), td:nth-child(10) { width: 120px; }  /* ACTIONS */
       }
 
     /* Extra small phone fixed column widths */
-    table { min-width: 810px; }
+    table { min-width: 720px; }
     th:nth-child(1), td:nth-child(1) { width: 30px; }   /* # */
 th:nth-child(2), td:nth-child(2) { width: 80px; }   /* STORE NAME */
 th:nth-child(3), td:nth-child(3) { width: 40px; }   /* UNIT */
@@ -514,42 +512,8 @@ th:nth-child(5), td:nth-child(5) { width: 60px; }   /* LAT */
 th:nth-child(6), td:nth-child(6) { width: 60px; }   /* LNG */
 th:nth-child(7), td:nth-child(7) { width: 50px; }   /* CATEGORY */
 th:nth-child(8), td:nth-child(8) { width: 80px; }   /* REMARKS */
-th:nth-child(9), td:nth-child(9) { width: 70px; }   /* PHOTO */
-th:nth-child(10), td:nth-child(10) { width: 100px; }  /* ACTIONS */
+th:nth-child(9), td:nth-child(9) { width: 100px; }  /* ACTIONS */
     }
-
-/* Photo preview cell */
-.photo-cell { 
-  text-align: center; 
-}
-
-.photo-thumb {
-  width: 80px;
-  height: 60px;
-  object-fit: cover;
-  border-radius: 6px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
-  cursor: pointer;
-}
-
-/* Fullscreen image preview modal */
-.image-modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.85);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
-  backdrop-filter: blur(2px);
-}
-
-.image-modal img {
-  max-width: 92vw;
-  max-height: 86vh;
-  border-radius: 10px;
-  box-shadow: 0 6px 24px rgba(0,0,0,0.5);
-}
 
     /* Loading and animation improvements */
     @keyframes pulse {

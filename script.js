@@ -1,7 +1,5 @@
 // Initialize camera feed
 import OpenAI from 'https://esm.sh/openai?bundle';
-import JSZip from 'jszip';
-import { saveAs } from 'file-saver';
 
 // --- OpenAI Vision setup ---
 let openaiClient = null;
@@ -158,7 +156,6 @@ function renderTable() {
         <input type="text" class="remarks-input" value="${remarksValue}" 
                placeholder="Add remarks..." data-index="${idx}">
       </td>
-      <td class="photo-cell">${scan.photo ? `<img src="${scan.photo}" class="photo-thumb" alt="Photo preview">` : ''}</td>
       <td class="actions-cell">
         <button class="edit-btn" data-index="${idx}" title="Edit Row">
           ✏️ Edit
@@ -188,7 +185,6 @@ function renderTable() {
     // Add event listeners for action buttons
     const editBtn = tr.querySelector('.edit-btn');
     const deleteBtn = tr.querySelector('.delete-btn');
-    const thumb = tr.querySelector('.photo-thumb');
     
     editBtn.addEventListener('click', (e) => {
       e.preventDefault();
@@ -203,22 +199,6 @@ function renderTable() {
       const index = parseInt(e.target.dataset.index);
       deleteRow(index);
     });
-
-    if (thumb) {
-      thumb.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const src = scans[idx] && scans[idx].photo;
-        if (!src) return;
-        const modal = document.createElement('div');
-        modal.className = 'image-modal';
-        modal.innerHTML = `<img src="${src}" alt="Preview" />`;
-        document.body.appendChild(modal);
-        const close = () => { if (modal.parentNode) modal.parentNode.removeChild(modal); };
-        modal.addEventListener('click', close);
-        modal.addEventListener('touchend', close, { passive: true });
-      });
-    }
   });
 }
 
@@ -337,56 +317,26 @@ document.getElementById('clearBtn').addEventListener('click', () => {
   }
 });
 
-document.getElementById('exportBtn').addEventListener('click', async () => {
+document.getElementById('exportBtn').addEventListener('click', () => {
   if (!scans.length) {
     alert('No data to export');
     return;
   }
-  const headers = ['Store Name','Unit','Address','Lat','Lng','Category','Remarks','Photo'];
+  const headers = ['Store Name','Unit','Address','Lat','Lng','Category','Remarks'];
   const csvRows = [headers.join(',')];
   scans.forEach(s => {
-    const photoFlag = s.photo ? 'Yes' : 'No';
-    const row = [s.storeName, s.unitNumber, s.address, s.lat, s.lng, s.category, s.remarks || '', photoFlag]
+    const row = [s.storeName, s.unitNumber, s.address, s.lat, s.lng, s.category, s.remarks || '']
       .map(v => '"' + (v || '').replace(/"/g,'""') + '"').join(',');
     csvRows.push(row);
   });
-  const csvText = '\ufeff' + csvRows.join('\n'); // BOM for Excel/UTF-8
-  // Attempt 1: object URL download
-  try {
-    const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'storefront_scans.csv';
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 0);
-    return;
-  } catch (e1) { /* continue */ }
-
-  // Attempt 2: data URL download (helps on some mobile browsers)
-  try {
-    const a = document.createElement('a');
-    a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvText);
-    a.download = 'storefront_scans.csv';
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => { a.remove(); }, 0);
-    return;
-  } catch (e2) { /* continue */ }
-
-  // Attempt 3: share sheet with file (iOS >= 13)
-  try {
-    const file = new File([csvText], 'storefront_scans.csv', { type: 'text/csv' });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title: 'Export CSV' });
-      return;
-    }
-  } catch (e3) { /* continue */ }
-
-  alert('Unable to export CSV on this browser.');
+  const blob = new Blob([csvRows.join('\n')], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'storefront_scans.csv';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 0);
 });
 
 // --- Manual store location search ---
@@ -953,54 +903,6 @@ document.addEventListener('keydown', (e) => {
 // Initialize zoom controls
 updateZoomLevel(currentZoom);
 
-// --- Image capture + gallery save helpers ---
-function formatTwoDigits(value) {
-  return String(value).padStart(2, '0');
-}
-
-function buildPhotoFilename(lat, lng) {
-  const now = new Date();
-  const yyyy = now.getFullYear();
-  const mm = formatTwoDigits(now.getMonth() + 1);
-  const dd = formatTwoDigits(now.getDate());
-  const hh = formatTwoDigits(now.getHours());
-  const mi = formatTwoDigits(now.getMinutes());
-  const ss = formatTwoDigits(now.getSeconds());
-  const coord = lat && lng ? `_lat${Number(lat).toFixed(6)}_lng${Number(lng).toFixed(6)}` : '';
-  return `bnsVision_${yyyy}${mm}${dd}_${hh}${mi}${ss}${coord}.jpg`;
-}
-
-function canvasToBlob(canvas, quality = 0.95) {
-  return new Promise((resolve, reject) => {
-    try {
-      canvas.toBlob((blob) => {
-        if (blob) resolve(blob); else reject(new Error('Failed to create blob'));
-      }, 'image/jpeg', quality);
-    } catch (e) {
-      reject(e);
-    }
-  });
-}
-
-function canvasToPreviewDataUrl(sourceCanvas, maxWidth = 640, quality = 0.85) {
-  const width = sourceCanvas.width;
-  const height = sourceCanvas.height;
-  if (!width || !height) return '';
-  if (width <= maxWidth) {
-    return sourceCanvas.toDataURL('image/jpeg', quality);
-  }
-  const scale = maxWidth / width;
-  const targetWidth = Math.round(width * scale);
-  const targetHeight = Math.round(height * scale);
-  const preview = document.createElement('canvas');
-  preview.width = targetWidth;
-  preview.height = targetHeight;
-  const ctx = preview.getContext('2d');
-  ctx.drawImage(sourceCanvas, 0, 0, targetWidth, targetHeight);
-  return preview.toDataURL('image/jpeg', quality);
-}
-
-
 // --- Duplicate Detection Functions ---
 function isDuplicateStore(newStore) {
   // Check if a store with the same name and address already exists
@@ -1093,7 +995,6 @@ async function performScanFromCanvas(canvas) {
   progressFill.style.width = '0%';
 
   const imageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-  const previewDataUrl = canvasToPreviewDataUrl(canvas, 640, 0.85);
 
   // Try Vision JSON extraction first
   let parsed = null;
@@ -1170,7 +1071,7 @@ async function performScanFromCanvas(canvas) {
   }
 
   const info = Object.assign(
-    { lat: finalLat, lng: finalLng, address: address, photo: previewDataUrl },
+    { lat: finalLat, lng: finalLng, address: address },
     parsed
   );
 
@@ -1212,6 +1113,7 @@ document.getElementById('scanBtn').addEventListener('click', async () => {
   canvas.height = video.videoHeight;
   const ctx = canvas.getContext('2d');
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
   await performScanFromCanvas(canvas);
 });
 
@@ -2422,22 +2324,3 @@ function addMapInteractionHandlers() {
 
 // Make functions globally available
 window.removeRoutePoint = removeRoutePoint; 
-
-function escapeCsv(v){ if(v==null) return ''; const s=String(v).replace(/"/g,'""'); return /[",\n]/.test(s)?`"${s}"`:s; }
-function stripPrefix(b64){ return b64.replace(/^data:image\/\w+;base64,/, ''); }
-
-async function exportZip(rows){
-  const zip = new JSZip();
-  const images = zip.folder('images');
-  const csv = ['id,storeName,image_filename'];
-
-  for (const r of rows) {
-    const fn = `images/${r.id}.png`;
-    csv.push(`${escapeCsv(r.id)},${escapeCsv(r.storeName)},${escapeCsv(fn)}`);
-    images.file(`${r.id}.png`, stripPrefix(r.imageBase64), { base64: true });
-  }
-
-  zip.file('data.csv', csv.join('\n'));
-  const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
-  saveAs(blob, 'export.zip');
-}
