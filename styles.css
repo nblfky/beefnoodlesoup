@@ -348,14 +348,15 @@
 
     /* Fixed column widths to prevent overlapping */
     th:nth-child(1), td:nth-child(1) { width: 40px; }   /* # */
-th:nth-child(2), td:nth-child(2) { width: 120px; }  /* STORE NAME */
-th:nth-child(3), td:nth-child(3) { width: 60px; }   /* UNIT */
-th:nth-child(4), td:nth-child(4) { width: 140px; }  /* ADDRESS */
-th:nth-child(5), td:nth-child(5) { width: 80px; }   /* LAT */
-th:nth-child(6), td:nth-child(6) { width: 80px; }   /* LNG */
-th:nth-child(7), td:nth-child(7) { width: 70px; }   /* CATEGORY */
-th:nth-child(8), td:nth-child(8) { width: 120px; }  /* REMARKS */
-th:nth-child(9), td:nth-child(9) { width: 140px; }  /* ACTIONS */
+th:nth-child(2), td:nth-child(2) { width: 90px; }   /* IMAGE */
+th:nth-child(3), td:nth-child(3) { width: 120px; }  /* STORE NAME */
+th:nth-child(4), td:nth-child(4) { width: 60px; }   /* UNIT */
+th:nth-child(5), td:nth-child(5) { width: 140px; }  /* ADDRESS */
+th:nth-child(6), td:nth-child(6) { width: 80px; }   /* LAT */
+th:nth-child(7), td:nth-child(7) { width: 80px; }   /* LNG */
+th:nth-child(8), td:nth-child(8) { width: 70px; }   /* CATEGORY */
+th:nth-child(9), td:nth-child(9) { width: 120px; }  /* REMARKS */
+th:nth-child(10), td:nth-child(10) { width: 140px; }  /* ACTIONS */
     
     th { 
       background: var(--bg-secondary);
@@ -458,16 +459,17 @@ th:nth-child(9), td:nth-child(9) { width: 140px; }  /* ACTIONS */
     /* Removed old swipe functionality */
 
     /* Mobile-specific fixed column widths */
-    table { min-width: 850px; }
+    table { min-width: 950px; }
     th:nth-child(1), td:nth-child(1) { width: 35px; }   /* # */
-th:nth-child(2), td:nth-child(2) { width: 100px; }  /* STORE NAME */
-th:nth-child(3), td:nth-child(3) { width: 50px; }   /* UNIT */
-th:nth-child(4), td:nth-child(4) { width: 120px; }  /* ADDRESS */
-th:nth-child(5), td:nth-child(5) { width: 70px; }   /* LAT */
-th:nth-child(6), td:nth-child(6) { width: 70px; }   /* LNG */
-th:nth-child(7), td:nth-child(7) { width: 60px; }   /* CATEGORY */
-th:nth-child(8), td:nth-child(8) { width: 100px; }  /* REMARKS */
-th:nth-child(9), td:nth-child(9) { width: 120px; }  /* ACTIONS */
+th:nth-child(2), td:nth-child(2) { width: 80px; }   /* IMAGE */
+th:nth-child(3), td:nth-child(3) { width: 100px; }  /* STORE NAME */
+th:nth-child(4), td:nth-child(4) { width: 50px; }   /* UNIT */
+th:nth-child(5), td:nth-child(5) { width: 120px; }  /* ADDRESS */
+th:nth-child(6), td:nth-child(6) { width: 70px; }   /* LAT */
+th:nth-child(7), td:nth-child(7) { width: 70px; }   /* LNG */
+th:nth-child(8), td:nth-child(8) { width: 60px; }   /* CATEGORY */
+th:nth-child(9), td:nth-child(9) { width: 100px; }  /* REMARKS */
+th:nth-child(10), td:nth-child(10) { width: 120px; }  /* ACTIONS */
     }
 
     /* Extra small phones */
@@ -580,6 +582,19 @@ th:nth-child(9), td:nth-child(9) { width: 100px; }  /* ACTIONS */
 .actions-cell {
   padding: 4px !important;
   vertical-align: top; /* Align buttons to top of cell */
+}
+
+.image-cell {
+  vertical-align: middle;
+}
+
+.scan-thumb {
+  width: 72px;
+  height: 54px;
+  object-fit: cover;
+  border-radius: 6px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  display: block;
 }
 
 .edit-btn, .delete-btn {

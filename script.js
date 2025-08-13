@@ -144,8 +144,12 @@ function renderTable() {
     
     // Add table cells with data including remarks
     const remarksValue = scan.remarks || '';
+    const imageCellHtml = scan.image
+      ? `<a href="${scan.image}" target="_blank" rel="noopener"><img src="${scan.image}" alt="Scan" class="scan-thumb"></a>`
+      : '';
     tr.innerHTML = `
       <td>${idx + 1}</td>
+      <td class="image-cell">${imageCellHtml}</td>
       <td>${scan.storeName}</td>
       <td>${scan.unitNumber}</td>
       <td>${scan.address ?? 'Not Found'}</td>
@@ -1071,7 +1075,7 @@ async function performScanFromCanvas(canvas) {
   }
 
   const info = Object.assign(
-    { lat: finalLat, lng: finalLng, address: address },
+    { lat: finalLat, lng: finalLng, address: address, image: imageDataUrl },
     parsed
   );
 
