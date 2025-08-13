@@ -82,6 +82,7 @@ const scanningText = document.querySelector('.scanning-text');
 // --- NEW: Image upload elements ---
 const uploadBtn = document.getElementById('uploadBtn');
 const imageInput = document.getElementById('imageInput');
+const toggleCaptureEl = document.getElementById('toggleCapture');
 // --- NEW: Zoom control elements ---
 const zoomInBtn = document.getElementById('zoomIn');
 const zoomOutBtn = document.getElementById('zoomOut');
@@ -94,6 +95,7 @@ let scans = [];
 // We will forward-declare it here and assign when loaded below.
 let openaiApiKey;
 let oneMapApiKey;
+let captureImages = true;
 
 // --- Scanning overlay helper functions ---
 function showScanningOverlay(text = 'Scanning...') {
@@ -129,6 +131,14 @@ function showScanComplete() {
 } // OneMap API key for authenticated endpoints
 openaiApiKey = localStorage.getItem('openaiApiKey') || '';
 oneMapApiKey = localStorage.getItem('oneMapApiKey') || '';
+captureImages = (localStorage.getItem('captureImages') ?? 'true') === 'true';
+if (toggleCaptureEl) {
+  toggleCaptureEl.checked = captureImages;
+  toggleCaptureEl.addEventListener('change', () => {
+    captureImages = !!toggleCaptureEl.checked;
+    localStorage.setItem('captureImages', String(captureImages));
+  });
+}
 try {
   scans = JSON.parse(localStorage.getItem('scans') || '[]');
 } catch (_) { scans = []; }
@@ -1034,7 +1044,7 @@ async function performScanFromCanvas(canvas) {
   progressBar.style.display = 'block';
   progressFill.style.width = '0%';
 
-  const imageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+  const imageDataUrl = captureImages ? canvas.toDataURL('image/jpeg', 0.8) : '';
 
   // Try Vision JSON extraction first
   let parsed = null;
@@ -1111,9 +1121,12 @@ async function performScanFromCanvas(canvas) {
   }
 
   const info = Object.assign(
-    { lat: finalLat, lng: finalLng, address: address, image: imageDataUrl },
+    { lat: finalLat, lng: finalLng, address: address },
     parsed
   );
+  if (captureImages && imageDataUrl) {
+    info.image = imageDataUrl;
+  }
 
   // Check for duplicates before adding
   if (isDuplicateStore(info)) {
