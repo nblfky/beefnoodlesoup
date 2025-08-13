@@ -326,10 +326,19 @@ document.getElementById('exportBtn').addEventListener('click', () => {
     alert('No data to export');
     return;
   }
-  const headers = ['Store Name','Unit','Address','Lat','Lng','Category','Remarks'];
+  const headers = ['Store Name','Unit','Address','Lat','Lng','Category','Remarks','Image'];
   const csvRows = [headers.join(',')];
   scans.forEach(s => {
-    const row = [s.storeName, s.unitNumber, s.address, s.lat, s.lng, s.category, s.remarks || '']
+    const row = [
+      s.storeName,
+      s.unitNumber,
+      s.address,
+      s.lat,
+      s.lng,
+      s.category,
+      s.remarks || '',
+      s.image || ''
+    ]
       .map(v => '"' + (v || '').replace(/"/g,'""') + '"').join(',');
     csvRows.push(row);
   });
