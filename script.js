@@ -326,7 +326,7 @@ document.getElementById('exportBtn').addEventListener('click', () => {
     alert('No data to export');
     return;
   }
-  const headers = ['Store Name','Unit','Address','Lat','Lng','Category','Remarks','Image'];
+  const headers = ['Store Name','Unit','Address','Lat','Lng','Category','Remarks'];
   const csvRows = [headers.join(',')];
   scans.forEach(s => {
     const row = [
@@ -336,8 +336,7 @@ document.getElementById('exportBtn').addEventListener('click', () => {
       s.lat,
       s.lng,
       s.category,
-      s.remarks || '',
-      s.image || ''
+      s.remarks || ''
     ]
       .map(v => '"' + (v || '').replace(/"/g,'""') + '"').join(',');
     csvRows.push(row);
