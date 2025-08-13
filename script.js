@@ -348,28 +348,43 @@ document.getElementById('exportBtn').addEventListener('click', async () => {
       .map(v => '"' + (v || '').replace(/"/g,'""') + '"').join(',');
     csvRows.push(row);
   });
+  const csvText = '\ufeff' + csvRows.join('\n'); // BOM for Excel/UTF-8
+  // Attempt 1: object URL download
   try {
-    const blob = new Blob([csvRows.join('\n')], {type:'text/csv'});
+    const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = 'storefront_scans.csv';
+    a.style.display = 'none';
     document.body.appendChild(a);
     a.click();
-    setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 0);
-  } catch (err) {
-    try {
-      // iOS fallback: try share sheet for the CSV file
-      const file = new File([csvRows.join('\n')], 'storefront_scans.csv', { type: 'text/csv' });
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: 'Export CSV' });
-      } else {
-        alert('Unable to export CSV on this browser.');
-      }
-    } catch (_) {
-      alert('Unable to export CSV on this browser.');
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 0);
+    return;
+  } catch (e1) { /* continue */ }
+
+  // Attempt 2: data URL download (helps on some mobile browsers)
+  try {
+    const a = document.createElement('a');
+    a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvText);
+    a.download = 'storefront_scans.csv';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { a.remove(); }, 0);
+    return;
+  } catch (e2) { /* continue */ }
+
+  // Attempt 3: share sheet with file (iOS >= 13)
+  try {
+    const file = new File([csvText], 'storefront_scans.csv', { type: 'text/csv' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: 'Export CSV' });
+      return;
     }
-  }
+  } catch (e3) { /* continue */ }
+
+  alert('Unable to export CSV on this browser.');
 });
 
 // --- Manual store location search ---
