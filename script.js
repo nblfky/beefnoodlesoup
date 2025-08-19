@@ -607,14 +607,39 @@ async function downloadPhoto(scan) {
       alert('Photo data not available');
       return;
     }
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = scan.photoFilename || `bnsVision_${scan.storeName || 'scan'}_photo.jpg`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(link.href);
-    showPhotoSavedNotification('Photo downloaded successfully!', false);
+    const filename = scan.photoFilename || `bnsVision_${scan.storeName || 'scan'}_photo.jpg`;
+
+    // Prefer Web Share API on mobile (iOS/Android)
+    if (navigator.share && navigator.canShare) {
+      try {
+        const file = new File([blob], filename, { type: 'image/jpeg' });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({ title: 'bnsVision Photo', files: [file] });
+          showPhotoSavedNotification('📤 Photo shared');
+          return;
+        }
+      } catch (shareErr) {
+        if (shareErr && shareErr.name === 'AbortError') return; // user cancelled
+        // fall through to download
+      }
+    }
+
+    const objectUrl = URL.createObjectURL(blob);
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (isIOS) {
+      // iOS Safari often ignores download attribute; open in new tab for long-press save
+      window.open(objectUrl, '_blank');
+      showPhotoSavedNotification('📸 Tap and hold image to Save', false);
+    } else {
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showPhotoSavedNotification('Photo downloaded successfully!', false);
+    }
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
   } catch (error) {
     console.error('Download failed:', error);
     showPhotoSavedNotification('Download failed. Please try again.', true);
@@ -731,15 +756,40 @@ document.getElementById('downloadAllPhotosBtn').addEventListener('click', async 
     // Generate ZIP file
     document.getElementById('downloadAllPhotosBtn').textContent = '📦 Creating ZIP...';
     const zipBlob = await zip.generateAsync({type: 'blob'});
-    
-    // Download the ZIP
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(zipBlob);
-    link.download = `bnsVision_all_photos_${timestamp}.zip`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(link.href);
+
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const zipName = `bnsVision_all_photos_${timestamp}.zip`;
+
+    // Prefer Web Share API when possible (iOS/Android)
+    if (navigator.share && navigator.canShare) {
+      try {
+        const file = new File([zipBlob], zipName, { type: 'application/zip' });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({ title: 'bnsVision Photos', files: [file] });
+          showPhotoSavedNotification(`📤 Shared ${photosWithData.length} photos`, false);
+          return;
+        }
+      } catch (shareErr) {
+        if (shareErr && shareErr.name === 'AbortError') return; // user cancelled
+        // fall through
+      }
+    }
+
+    const zipUrl = URL.createObjectURL(zipBlob);
+    if (isIOS) {
+      // iOS: open in new tab so user can use "Open in..." to save to Files
+      window.open(zipUrl, '_blank');
+      showPhotoSavedNotification('📦 Tap Share → Save to Files', false);
+    } else {
+      const link = document.createElement('a');
+      link.href = zipUrl;
+      link.download = zipName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showPhotoSavedNotification(`Downloaded ${photosWithData.length} photos`, false);
+    }
+    setTimeout(() => URL.revokeObjectURL(zipUrl), 2000);
     
     showPhotoSavedNotification(`Successfully downloaded ${photosWithData.length} photos as ZIP file!`, false);
     
