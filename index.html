@@ -79,15 +79,15 @@
     <div class="card">
       <div class="toolbar">
         <button id="exportBtn" class="btn">Export CSV</button>
+        <button id="downloadAllPhotosBtn" class="btn">📸 Download All Photos</button>
         <button id="uploadBtn" class="btn">Upload Image</button>
-          <button id="downloadImagesBtn" class="btn">Download Images</button>
         <button id="clearBtn" class="btn">Clear</button>
-          <label class="toggle-capture"><input type="checkbox" id="toggleCapture" checked> Capture Image</label>
         <input type="file" id="imageInput" accept="image/*" style="display:none" />
       </div>
       <div class="search-toolbar">
         <input type="text" id="storeSearchInput" placeholder="Search for store name in table..." />
         <button id="searchLocationBtn" class="btn">🔍 Search</button>
+        <button id="photoCaptureToggle" class="btn photo-toggle" title="Toggle photo capture">📸 Photo: ON</button>
       </div>
       <div id="status" class="muted"></div>
       <div class="table-container">
@@ -95,13 +95,14 @@
           <thead>
             <tr>
               <th>#</th>
-              <th>Image</th>
-              <th>Store Name</th>
+              <th>Photo</th>
+              <th>POI Name</th>
+              <th>Lat-Long</th>
+              <th>House_No</th>
+              <th>Street</th>
               <th>Unit</th>
-              <th>Address</th>
-              <th>Lat</th>
-              <th>Lng</th>
-              <th>Category</th>
+              <th>Building</th>
+              <th>Postcode</th>
               <th>Remarks</th>
               <th>Actions</th>
             </tr>
@@ -120,8 +121,6 @@
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
   <!-- Spell correction library -->
   <script src="https://cdn.jsdelivr.net/npm/didyoumean2@3/dist/didyoumean2.min.js"></script>
-   <!-- ZIP library for bulk image download -->
-   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <!-- App logic (ESM) -->
   <script type="module" src="script.js"></script>
 </body>

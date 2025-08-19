@@ -268,30 +268,12 @@
       flex-wrap: wrap;
     }
 
-    .toggle-capture {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 0 10px;
-      border-radius: var(--border-radius-small);
-      background: var(--bg-secondary);
-      color: var(--text);
-      font-weight: 600;
-      user-select: none;
-    }
-
-    .toggle-capture input[type="checkbox"] {
-      width: 18px;
-      height: 18px;
-      accent-color: var(--primary);
-      cursor: pointer;
-    }
-
     .search-toolbar {
       display: flex;
       gap: 12px;
       margin-bottom: 24px;
       align-items: stretch;
+      flex-wrap: wrap;
     }
 
     #storeSearchInput {
@@ -314,6 +296,31 @@
 
     #storeSearchInput::placeholder {
       color: var(--text-light);
+    }
+
+    .photo-toggle {
+      background: var(--primary) !important;
+      color: white !important;
+      font-size: 13px;
+      white-space: nowrap;
+      min-width: 130px;
+      transition: all 0.2s ease;
+      border: 2px solid var(--primary) !important;
+    }
+
+    .photo-toggle.disabled {
+      background: #6b7280 !important;
+      border-color: #6b7280 !important;
+      opacity: 0.8;
+    }
+
+    .photo-toggle:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 177, 79, 0.3);
+    }
+
+    .photo-toggle.disabled:hover {
+      box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
     }
     
     .btn {
@@ -367,15 +374,16 @@
 
     /* Fixed column widths to prevent overlapping */
     th:nth-child(1), td:nth-child(1) { width: 40px; }   /* # */
-th:nth-child(2), td:nth-child(2) { width: 90px; }   /* IMAGE */
-th:nth-child(3), td:nth-child(3) { width: 120px; }  /* STORE NAME */
-th:nth-child(4), td:nth-child(4) { width: 60px; }   /* UNIT */
-th:nth-child(5), td:nth-child(5) { width: 140px; }  /* ADDRESS */
-th:nth-child(6), td:nth-child(6) { width: 80px; }   /* LAT */
-th:nth-child(7), td:nth-child(7) { width: 80px; }   /* LNG */
-th:nth-child(8), td:nth-child(8) { width: 70px; }   /* CATEGORY */
-th:nth-child(9), td:nth-child(9) { width: 120px; }  /* REMARKS */
-th:nth-child(10), td:nth-child(10) { width: 140px; }  /* ACTIONS */
+    th:nth-child(2), td:nth-child(2) { width: 80px; }   /* Photo */
+    th:nth-child(3), td:nth-child(3) { width: 120px; }  /* POI Name */
+    th:nth-child(4), td:nth-child(4) { width: 140px; }  /* Lat-Long */
+    th:nth-child(5), td:nth-child(5) { width: 80px; }   /* House_No */
+    th:nth-child(6), td:nth-child(6) { width: 100px; }  /* Street */
+    th:nth-child(7), td:nth-child(7) { width: 60px; }   /* Unit */
+    th:nth-child(8), td:nth-child(8) { width: 100px; }  /* Building */
+    th:nth-child(9), td:nth-child(9) { width: 80px; }   /* Postcode */
+    th:nth-child(10), td:nth-child(10) { width: 120px; } /* Remarks */
+    th:nth-child(11), td:nth-child(11) { width: 140px; } /* Actions */
     
     th { 
       background: var(--bg-secondary);
@@ -478,17 +486,18 @@ th:nth-child(10), td:nth-child(10) { width: 140px; }  /* ACTIONS */
     /* Removed old swipe functionality */
 
     /* Mobile-specific fixed column widths */
-    table { min-width: 950px; }
+    table { min-width: 980px; }
     th:nth-child(1), td:nth-child(1) { width: 35px; }   /* # */
-th:nth-child(2), td:nth-child(2) { width: 80px; }   /* IMAGE */
-th:nth-child(3), td:nth-child(3) { width: 100px; }  /* STORE NAME */
-th:nth-child(4), td:nth-child(4) { width: 50px; }   /* UNIT */
-th:nth-child(5), td:nth-child(5) { width: 120px; }  /* ADDRESS */
-th:nth-child(6), td:nth-child(6) { width: 70px; }   /* LAT */
-th:nth-child(7), td:nth-child(7) { width: 70px; }   /* LNG */
-th:nth-child(8), td:nth-child(8) { width: 60px; }   /* CATEGORY */
-th:nth-child(9), td:nth-child(9) { width: 100px; }  /* REMARKS */
-th:nth-child(10), td:nth-child(10) { width: 120px; }  /* ACTIONS */
+    th:nth-child(2), td:nth-child(2) { width: 70px; }   /* Photo */
+    th:nth-child(3), td:nth-child(3) { width: 100px; }  /* POI Name */
+    th:nth-child(4), td:nth-child(4) { width: 120px; }  /* Lat-Long */
+    th:nth-child(5), td:nth-child(5) { width: 70px; }   /* House_No */
+    th:nth-child(6), td:nth-child(6) { width: 80px; }   /* Street */
+    th:nth-child(7), td:nth-child(7) { width: 50px; }   /* Unit */
+    th:nth-child(8), td:nth-child(8) { width: 80px; }   /* Building */
+    th:nth-child(9), td:nth-child(9) { width: 65px; }   /* Postcode */
+    th:nth-child(10), td:nth-child(10) { width: 100px; } /* Remarks */
+    th:nth-child(11), td:nth-child(11) { width: 120px; } /* Actions */
     }
 
     /* Extra small phones */
@@ -524,16 +533,18 @@ th:nth-child(10), td:nth-child(10) { width: 120px; }  /* ACTIONS */
       }
 
     /* Extra small phone fixed column widths */
-    table { min-width: 720px; }
+    table { min-width: 840px; }
     th:nth-child(1), td:nth-child(1) { width: 30px; }   /* # */
-th:nth-child(2), td:nth-child(2) { width: 80px; }   /* STORE NAME */
-th:nth-child(3), td:nth-child(3) { width: 40px; }   /* UNIT */
-th:nth-child(4), td:nth-child(4) { width: 100px; }  /* ADDRESS */
-th:nth-child(5), td:nth-child(5) { width: 60px; }   /* LAT */  
-th:nth-child(6), td:nth-child(6) { width: 60px; }   /* LNG */
-th:nth-child(7), td:nth-child(7) { width: 50px; }   /* CATEGORY */
-th:nth-child(8), td:nth-child(8) { width: 80px; }   /* REMARKS */
-th:nth-child(9), td:nth-child(9) { width: 100px; }  /* ACTIONS */
+    th:nth-child(2), td:nth-child(2) { width: 60px; }   /* Photo */
+    th:nth-child(3), td:nth-child(3) { width: 80px; }   /* POI Name */
+    th:nth-child(4), td:nth-child(4) { width: 100px; }  /* Lat-Long */
+    th:nth-child(5), td:nth-child(5) { width: 60px; }   /* House_No */
+    th:nth-child(6), td:nth-child(6) { width: 70px; }   /* Street */
+    th:nth-child(7), td:nth-child(7) { width: 40px; }   /* Unit */
+    th:nth-child(8), td:nth-child(8) { width: 70px; }   /* Building */
+    th:nth-child(9), td:nth-child(9) { width: 55px; }   /* Postcode */
+    th:nth-child(10), td:nth-child(10) { width: 80px; } /* Remarks */
+    th:nth-child(11), td:nth-child(11) { width: 100px; } /* Actions */
     }
 
     /* Loading and animation improvements */
@@ -601,19 +612,6 @@ th:nth-child(9), td:nth-child(9) { width: 100px; }  /* ACTIONS */
 .actions-cell {
   padding: 4px !important;
   vertical-align: top; /* Align buttons to top of cell */
-}
-
-.image-cell {
-  vertical-align: middle;
-}
-
-.scan-thumb {
-  width: 72px;
-  height: 54px;
-  object-fit: cover;
-  border-radius: 6px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
-  display: block;
 }
 
 .edit-btn, .delete-btn {
@@ -1003,6 +1001,140 @@ th:nth-child(9), td:nth-child(9) { width: 100px; }  /* ACTIONS */
     .scan-btn:active,
     .btn:active {
       transform: scale(0.98);
+    }
+
+    /* Photo thumbnail and download styles */
+    .photo-cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 4px;
+    }
+
+    .photo-thumbnail {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 2px solid #e0e0e0;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .photo-thumbnail:hover {
+      border-color: var(--primary);
+      transform: scale(1.05);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+
+    .photo-download-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .photo-download-btn:hover {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+    }
+
+    .no-photo {
+      width: 60px;
+      height: 60px;
+      background: #f5f5f5;
+      border: 2px dashed #ccc;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: #999;
+    }
+
+    /* Photo modal for enlarged view */
+    .photo-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1001;
+      backdrop-filter: blur(4px);
+    }
+
+    .photo-modal-content {
+      max-width: 90%;
+      max-height: 90%;
+      position: relative;
+    }
+
+    .photo-modal img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      border-radius: 8px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+
+    .photo-modal-close {
+      position: absolute;
+      top: -40px;
+      right: 0;
+      background: rgba(255,255,255,0.9);
+      color: #333;
+      border: none;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .photo-modal-close:hover {
+      background: white;
+      transform: scale(1.1);
+    }
+
+    @media (max-width: 480px) {
+      .photo-thumbnail {
+        width: 50px;
+        height: 50px;
+      }
+
+      .no-photo {
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+      }
+
+      .photo-download-btn {
+        font-size: 9px;
+        padding: 1px 4px;
+      }
+
+      .photo-modal-close {
+        top: -35px;
+        width: 28px;
+        height: 28px;
+        font-size: 16px;
+      }
     }
 
     /* ===== MAP CONTAINER STYLES ===== */

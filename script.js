@@ -1,28 +1,18 @@
 // Initialize camera feed
-// Note: dynamically import OpenAI SDK to avoid breaking the whole app if CDN fails
+import OpenAI from 'https://esm.sh/openai?bundle';
 
 // --- OpenAI Vision setup ---
 let openaiClient = null;
-let OpenAIConstructor = null;
-async function getOpenAIClient() {
+function getOpenAIClient() {
   if (!openaiApiKey) return null;
   if (openaiClient) return openaiClient;
-  try {
-    if (!OpenAIConstructor) {
-      const mod = await import('https://esm.sh/openai?bundle');
-      OpenAIConstructor = mod?.default || mod;
-    }
-    openaiClient = new OpenAIConstructor({ apiKey: openaiApiKey, dangerouslyAllowBrowser: true });
-    return openaiClient;
-  } catch (err) {
-    console.warn('Failed to load OpenAI SDK', err);
-    return null;
-  }
+  openaiClient = new OpenAI({ apiKey: openaiApiKey, dangerouslyAllowBrowser: true });
+  return openaiClient;
 }
 
 // Analyse an image with GPT-4o Vision style prompt. Accepts a question and a data-URL or remote image URL.
 async function askImageQuestion(question, imageUrl) {
-  const client = await getOpenAIClient();
+  const client = getOpenAIClient();
   if (!client) return null;
   try {
     const resp = await client.responses.create({
@@ -46,7 +36,7 @@ async function askImageQuestion(question, imageUrl) {
 
 // Extract structured JSON directly from an image using GPT-4o Vision
 async function extractInfoVision(imageUrl) {
-  const client = await getOpenAIClient();
+  const client = getOpenAIClient();
   if (!client) return null;
   try {
     const resp = await client.responses.create({
@@ -82,8 +72,6 @@ const scanningText = document.querySelector('.scanning-text');
 // --- NEW: Image upload elements ---
 const uploadBtn = document.getElementById('uploadBtn');
 const imageInput = document.getElementById('imageInput');
-const toggleCaptureEl = document.getElementById('toggleCapture');
-const downloadImagesBtn = document.getElementById('downloadImagesBtn');
 // --- NEW: Zoom control elements ---
 const zoomInBtn = document.getElementById('zoomIn');
 const zoomOutBtn = document.getElementById('zoomOut');
@@ -92,11 +80,101 @@ const zoomLevelSpan = document.getElementById('zoomLevel');
 
 // Persistent scans storage
 let scans = [];
+
+// Photo storage and deferred save utilities
+const PHOTO_DB_NAME = 'bnsv_photo_db';
+const PHOTO_STORE = 'photos';
+let saveScansScheduled = false;
+
+function scheduleSaveScans() {
+  if (saveScansScheduled) return;
+  saveScansScheduled = true;
+  const ric = window.requestIdleCallback || function(cb){ return setTimeout(cb, 0); };
+  ric(() => {
+    try {
+      localStorage.setItem('scans', JSON.stringify(scans));
+    } finally {
+      saveScansScheduled = false;
+    }
+  });
+}
+
+function openPhotoDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(PHOTO_DB_NAME, 1);
+    req.onupgradeneeded = function(e) {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(PHOTO_STORE)) {
+        db.createObjectStore(PHOTO_STORE, { keyPath: 'id' });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function savePhotoBlob(photoId, blob, filename) {
+  try {
+    const db = await openPhotoDB();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(PHOTO_STORE, 'readwrite');
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+      tx.objectStore(PHOTO_STORE).put({ id: photoId, blob, filename });
+    });
+  } catch (_) { /* ignore */ }
+}
+
+async function getPhotoBlob(photoId) {
+  try {
+    const db = await openPhotoDB();
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(PHOTO_STORE, 'readonly');
+      tx.onerror = () => reject(tx.error);
+      const req = tx.objectStore(PHOTO_STORE).get(photoId);
+      req.onsuccess = () => resolve(req.result ? req.result.blob : null);
+      req.onerror = () => reject(req.error);
+    });
+  } catch (_) {
+    return null;
+  }
+}
+
+function createThumbnailDataURL(sourceCanvas, maxWidth = 400, maxHeight = 400, quality = 0.6) {
+  const w = sourceCanvas.width;
+  const h = sourceCanvas.height;
+  const scale = Math.min(maxWidth / w, maxHeight / h, 1);
+  const outW = Math.max(1, Math.round(w * scale));
+  const outH = Math.max(1, Math.round(h * scale));
+  const thumb = document.createElement('canvas');
+  thumb.width = outW;
+  thumb.height = outH;
+  const ctx = thumb.getContext('2d');
+  ctx.drawImage(sourceCanvas, 0, 0, outW, outH);
+  return thumb.toDataURL('image/jpeg', quality);
+}
+
+// Migrate existing data to include photo fields if missing
+function migrateScansData() {
+  scans = scans.map(scan => {
+    // Ensure all new fields exist with default values
+    return {
+      ...scan,
+      photoData: scan.photoData || null,
+      timestamp: scan.timestamp || new Date().toISOString(),
+      photoFilename: scan.photoFilename || null,
+      houseNo: scan.houseNo || 'Not Found',
+      street: scan.street || 'Not Found', 
+      building: scan.building || 'Not Found',
+      postcode: scan.postcode || 'Not Found'
+    };
+  });
+  saveScans();
+}
 // Note: openaiApiKey is defined later, but we need it before using getOpenAIClient().
 // We will forward-declare it here and assign when loaded below.
 let openaiApiKey;
 let oneMapApiKey;
-let captureImages = true;
 
 // --- Scanning overlay helper functions ---
 function showScanningOverlay(text = 'Scanning...') {
@@ -132,22 +210,77 @@ function showScanComplete() {
 } // OneMap API key for authenticated endpoints
 openaiApiKey = localStorage.getItem('openaiApiKey') || '';
 oneMapApiKey = localStorage.getItem('oneMapApiKey') || '';
-captureImages = (localStorage.getItem('captureImages') ?? 'true') === 'true';
-if (toggleCaptureEl) {
-  toggleCaptureEl.checked = captureImages;
-  toggleCaptureEl.addEventListener('change', () => {
-    captureImages = !!toggleCaptureEl.checked;
-    localStorage.setItem('captureImages', String(captureImages));
-  });
-}
 try {
   scans = JSON.parse(localStorage.getItem('scans') || '[]');
 } catch (_) { scans = []; }
 
+// Migrate existing data to new structure
+if (scans.length > 0) {
+  migrateScansData();
+}
+
+// Background migration: move full-res photos to IndexedDB and keep thumbnails in localStorage
+async function migrateExistingPhotosToIndexedDB() {
+  let migratedCount = 0;
+  for (let i = 0; i < scans.length; i++) {
+    const scan = scans[i];
+    if (!scan) continue;
+    const hasInlinePhoto = scan.photoData && typeof scan.photoData === 'string' && scan.photoData.startsWith('data:image/');
+    const alreadyMigrated = !!scan.photoId;
+    if (!hasInlinePhoto || alreadyMigrated) continue;
+
+    try {
+      const timestamp = scan.timestamp || new Date().toISOString();
+      const photoId = `photo_${timestamp.replace(/[:.]/g, '-').slice(0, -5)}_${Math.random().toString(36).slice(2,8)}`;
+      const photoFilename = scan.photoFilename || `bnsVision_${scan.storeName || 'scan'}_${timestamp.replace(/[:.]/g, '-').slice(0, -5)}.jpg`;
+
+      // Convert data URL to Blob
+      const res = await fetch(scan.photoData);
+      const blob = await res.blob();
+      await savePhotoBlob(photoId, blob, photoFilename);
+
+      // Create thumbnail from existing image
+      const img = new Image();
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = scan.photoData;
+      });
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      const thumbDataUrl = createThumbnailDataURL(canvas, 400, 400, 0.6);
+
+      scans[i] = {
+        ...scan,
+        photoData: thumbDataUrl,
+        photoId,
+        photoFilename
+      };
+      migratedCount++;
+      // Yield to UI occasionally
+      if (migratedCount % 3 === 0) {
+        await new Promise(r => setTimeout(r, 0));
+      }
+    } catch (_) {
+      // Ignore individual migration failures
+    }
+  }
+  if (migratedCount > 0) {
+    saveScans();
+    renderTable();
+  }
+}
+
+// Kick off migration shortly after load
+setTimeout(() => { migrateExistingPhotosToIndexedDB(); }, 500);
+
 renderTable();
 
 function saveScans() {
-  localStorage.setItem('scans', JSON.stringify(scans));
+  scheduleSaveScans();
 }
 
 function renderTable() {
@@ -157,7 +290,14 @@ function renderTable() {
   clearSearchHighlights();
   
   tableBody.innerHTML = '';
+  console.log('Rendering table with', scans.length, 'scans');
   scans.forEach((scan, idx) => {
+    console.log(`Rendering scan ${idx}:`, {
+      storeName: scan.storeName,
+      hasPhoto: !!scan.photoData,
+      keys: Object.keys(scan)
+    });
+    
     // Create the main table row
     const tr = document.createElement('tr');
     tr.className = 'table-row';
@@ -165,18 +305,46 @@ function renderTable() {
     
     // Add table cells with data including remarks
     const remarksValue = scan.remarks || '';
-    const imageCellHtml = scan.image
-      ? `<a href="${scan.image}" target="_blank" rel="noopener"><img src="${scan.image}" alt="Scan" class="scan-thumb"></a>`
-      : '';
-    tr.innerHTML = `
+    
+    // Format Lat-Long as a single field
+    const latLong = (scan.lat && scan.lng && scan.lat !== 'Not Found' && scan.lng !== 'Not Found') 
+      ? `${scan.lat}, ${scan.lng}` 
+      : 'Not Found';
+    
+    // Parse address components (for now, use placeholders until address parsing is implemented)
+    const houseNo = scan.houseNo || 'Not Found';
+    const street = scan.street || 'Not Found';
+    const building = scan.building || 'Not Found';
+    const postcode = scan.postcode || 'Not Found';
+    
+    // Create photo cell content - ensure it's always a complete cell
+    let photoCell;
+    if (scan.photoData && scan.photoData.trim() !== '') {
+      photoCell = `
+        <div class="photo-cell">
+          <img src="${scan.photoData}" alt="Store photo" class="photo-thumbnail" data-index="${idx}" title="Click to enlarge">
+          <button class="photo-download-btn" data-index="${idx}" title="Download photo">⬇️</button>
+        </div>
+      `;
+    } else {
+      photoCell = `
+        <div class="photo-cell">
+          <div class="no-photo">📷</div>
+          <span style="font-size: 9px; color: #999;">No photo</span>
+        </div>
+      `;
+    }
+
+    const rowHTML = `
       <td>${idx + 1}</td>
-      <td class="image-cell">${imageCellHtml}</td>
+      <td>${photoCell}</td>
       <td>${scan.storeName}</td>
+      <td>${latLong}</td>
+      <td>${houseNo}</td>
+      <td>${street}</td>
       <td>${scan.unitNumber}</td>
-      <td>${scan.address ?? 'Not Found'}</td>
-      <td>${scan.lat ?? 'Not Found'}</td>
-      <td>${scan.lng ?? 'Not Found'}</td>
-      <td>${scan.category}</td>
+      <td>${building}</td>
+      <td>${postcode}</td>
       <td class="remarks-cell">
         <input type="text" class="remarks-input" value="${remarksValue}" 
                placeholder="Add remarks..." data-index="${idx}">
@@ -189,6 +357,9 @@ function renderTable() {
           🗑️ Delete
         </button>
       </td>`;
+    
+    console.log(`Row HTML for scan ${idx}:`, rowHTML.substring(0, 200) + '...');
+    tr.innerHTML = rowHTML;
     
     // Append row to table
     tableBody.appendChild(tr);
@@ -224,6 +395,39 @@ function renderTable() {
       const index = parseInt(e.target.dataset.index);
       deleteRow(index);
     });
+
+    // Add event listeners for photo interactions
+    const photoThumbnail = tr.querySelector('.photo-thumbnail');
+    const photoDownloadBtn = tr.querySelector('.photo-download-btn');
+    
+    if (photoThumbnail) {
+      photoThumbnail.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const index = parseInt(e.target.dataset.index);
+        const scan = scans[index];
+        try {
+          let url = scan.photoData;
+          if (scan.photoId) {
+            const blob = await getPhotoBlob(scan.photoId);
+            if (blob) {
+              url = URL.createObjectURL(blob);
+            }
+          }
+          showPhotoModal(url, scan.storeName);
+        } catch (_) {
+          showPhotoModal(scan.photoData, scan.storeName);
+        }
+      });
+    }
+    
+    if (photoDownloadBtn) {
+      photoDownloadBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const index = parseInt(e.target.dataset.index);
+        downloadPhoto(scans[index]);
+      });
+    }
   });
 }
 
@@ -240,16 +444,8 @@ function editRow(index) {
       <h3>Edit Scan #${index + 1}</h3>
       <div class="edit-form">
         <div class="edit-field">
-          <label>Store Name:</label>
+          <label>POI Name:</label>
           <input type="text" id="edit-storeName" value="${scan.storeName}">
-        </div>
-        <div class="edit-field">
-          <label>Unit Number:</label>
-          <input type="text" id="edit-unitNumber" value="${scan.unitNumber}">
-        </div>
-        <div class="edit-field">
-          <label>Address:</label>
-          <input type="text" id="edit-address" value="${scan.address || ''}">
         </div>
         <div class="edit-field">
           <label>Latitude:</label>
@@ -260,13 +456,38 @@ function editRow(index) {
           <input type="text" id="edit-lng" value="${scan.lng || ''}">
         </div>
         <div class="edit-field">
-          <label>Category:</label>
-          <input type="text" id="edit-category" value="${scan.category}">
+          <label>House_No:</label>
+          <input type="text" id="edit-houseNo" value="${scan.houseNo || ''}">
+        </div>
+        <div class="edit-field">
+          <label>Street:</label>
+          <input type="text" id="edit-street" value="${scan.street || ''}">
+        </div>
+        <div class="edit-field">
+          <label>Unit:</label>
+          <input type="text" id="edit-unitNumber" value="${scan.unitNumber}">
+        </div>
+        <div class="edit-field">
+          <label>Building:</label>
+          <input type="text" id="edit-building" value="${scan.building || ''}">
+        </div>
+        <div class="edit-field">
+          <label>Postcode:</label>
+          <input type="text" id="edit-postcode" value="${scan.postcode || ''}">
         </div>
         <div class="edit-field">
           <label>Remarks:</label>
           <input type="text" id="edit-remarks" value="${scan.remarks || ''}">
         </div>
+        ${scan.photoData ? `
+        <div class="edit-field">
+          <label>Photo Preview:</label>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <img src="${scan.photoData}" alt="Scan photo" style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px; border: 2px solid #e0e0e0;">
+            <button type="button" class="btn" onclick="showPhotoModal('${scan.photoData}', '${scan.storeName}')">🔍 View Full Size</button>
+          </div>
+        </div>
+        ` : '<div class="edit-field"><label>Photo:</label><span style="color: #999;">No photo captured</span></div>'}
         <div class="edit-actions">
           <button class="btn save-btn">💾 Save</button>
           <button class="btn cancel-btn">❌ Cancel</button>
@@ -290,11 +511,13 @@ function editRow(index) {
     scans[index] = {
       ...scan,
       storeName: document.getElementById('edit-storeName').value,
-      unitNumber: document.getElementById('edit-unitNumber').value,
-      address: document.getElementById('edit-address').value,
       lat: document.getElementById('edit-lat').value,
       lng: document.getElementById('edit-lng').value,
-      category: document.getElementById('edit-category').value,
+      houseNo: document.getElementById('edit-houseNo').value,
+      street: document.getElementById('edit-street').value,
+      unitNumber: document.getElementById('edit-unitNumber').value,
+      building: document.getElementById('edit-building').value,
+      postcode: document.getElementById('edit-postcode').value,
       remarks: document.getElementById('edit-remarks').value
     };
     
@@ -327,6 +550,77 @@ function deleteRow(index) {
   }
 }
 
+// Show photo in enlarged modal
+function showPhotoModal(photoData, storeName) {
+  const modal = document.createElement('div');
+  modal.className = 'photo-modal';
+  modal.innerHTML = `
+    <div class="photo-modal-content">
+      <button class="photo-modal-close" title="Close">×</button>
+      <img src="${photoData}" alt="${storeName} photo">
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  const closeModal = () => {
+    document.body.removeChild(modal);
+  };
+  
+  // Close on button click
+  modal.querySelector('.photo-modal-close').addEventListener('click', closeModal);
+  
+  // Close on background click
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      closeModal();
+    }
+  });
+  
+  // Close on Escape key
+  const handleKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      closeModal();
+      document.removeEventListener('keydown', handleKeyDown);
+    }
+  };
+  document.addEventListener('keydown', handleKeyDown);
+}
+
+// Download individual photo
+async function downloadPhoto(scan) {
+  if (!scan.photoData) {
+    alert('No photo available for this scan');
+    return;
+  }
+  
+  try {
+    let blob = null;
+    if (scan.photoId) {
+      blob = await getPhotoBlob(scan.photoId);
+    }
+    if (!blob && scan.photoData && scan.photoData.startsWith('data:image/')) {
+      const res = await fetch(scan.photoData);
+      blob = await res.blob();
+    }
+    if (!blob) {
+      alert('Photo data not available');
+      return;
+    }
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = scan.photoFilename || `bnsVision_${scan.storeName || 'scan'}_photo.jpg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+    showPhotoSavedNotification('Photo downloaded successfully!', false);
+  } catch (error) {
+    console.error('Download failed:', error);
+    showPhotoSavedNotification('Download failed. Please try again.', true);
+  }
+}
+
 // Removed old swipe functionality - now using buttons
 
 // After renderTable definition add event listeners
@@ -342,92 +636,122 @@ document.getElementById('clearBtn').addEventListener('click', () => {
   }
 });
 
-function triggerDownloadBlob(blob, filename) {
-  // IE 10+
-  if (window.navigator && typeof window.navigator.msSaveBlob === 'function') {
-    window.navigator.msSaveBlob(blob, filename);
-    return true;
-  }
-  try {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 0);
-    return true;
-  } catch (_) {
-    return false;
-  }
-}
-
-function triggerDownloadDataUrl(dataUrl, filename) {
-  try {
-    const a = document.createElement('a');
-    a.href = dataUrl;
-    a.download = filename;
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    return true;
-  } catch (_) {
-    return false;
-  }
-}
-
-function exportCsv() {
+document.getElementById('exportBtn').addEventListener('click', () => {
   if (!scans.length) {
     alert('No data to export');
     return;
   }
-
-  const headers = ['Store Name','Unit','Address','Lat','Lng','Category','Remarks'];
+  const headers = ['POI Name','Lat-Long','House_No','Street','Unit','Building','Postcode','Remarks','Photo Available','Timestamp'];
   const csvRows = [headers.join(',')];
-
   scans.forEach(s => {
+    // Format Lat-Long as a single field
+    const latLong = (s.lat && s.lng && s.lat !== 'Not Found' && s.lng !== 'Not Found') 
+      ? `${s.lat}, ${s.lng}` 
+      : 'Not Found';
+    
     const row = [
-      s.storeName,
-      s.unitNumber,
-      s.address,
-      s.lat,
-      s.lng,
-      s.category,
-      s.remarks || ''
-    ]
-      .map(v => '"' + (v || '').toString().replace(/"/g,'""') + '"').join(',');
+      s.storeName, 
+      latLong,
+      s.houseNo || 'Not Found', 
+      s.street || 'Not Found', 
+      s.unitNumber, 
+      s.building || 'Not Found', 
+      s.postcode || 'Not Found', 
+      s.remarks || '',
+      s.photoData ? 'Yes' : 'No',
+      s.timestamp || 'Unknown'
+    ].map(v => '"' + (v || '').replace(/"/g,'""') + '"').join(',');
     csvRows.push(row);
   });
+  const blob = new Blob([csvRows.join('\n')], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'storefront_scans.csv';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 0);
+});
 
-  const csvContent = '\ufeff' + csvRows.join('\r\n'); // BOM + CRLF
-
-  // Try Blob first
-  try {
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    if (triggerDownloadBlob(blob, 'storefront_scans.csv')) return;
-  } catch (err) {
-    console.warn('Blob export failed, will try data URL', err);
+// Download All Photos functionality
+document.getElementById('downloadAllPhotosBtn').addEventListener('click', async () => {
+  const photosWithData = scans.filter(scan => scan.photoData);
+  
+  if (photosWithData.length === 0) {
+    alert('No photos available to download');
+    return;
   }
-
-  // Fallback: data URL
-  const dataUrl = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
-  if (triggerDownloadDataUrl(dataUrl, 'storefront_scans.csv')) return;
-
-  alert('CSV export failed. Please try a different browser.');
-}
-
-const exportBtnEl = document.getElementById('exportBtn');
-if (exportBtnEl) {
-  exportBtnEl.addEventListener('click', exportCsv);
-} else {
-  document.addEventListener('DOMContentLoaded', () => {
-    const el = document.getElementById('exportBtn');
-    if (el) el.addEventListener('click', exportCsv);
-  });
-}
+  
+  if (photosWithData.length === 1) {
+    // If only one photo, just download it directly
+    downloadPhoto(photosWithData[0]);
+    return;
+  }
+  
+  // For multiple photos, create a ZIP file
+  try {
+    // Show progress
+    const originalText = document.getElementById('downloadAllPhotosBtn').textContent;
+    document.getElementById('downloadAllPhotosBtn').textContent = '📦 Preparing...';
+    document.getElementById('downloadAllPhotosBtn').disabled = true;
+    
+    // Import JSZip dynamically
+    if (!window.JSZip) {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+      document.head.appendChild(script);
+      
+      await new Promise((resolve, reject) => {
+        script.onload = resolve;
+        script.onerror = reject;
+      });
+    }
+    
+    const zip = new JSZip();
+    const timestamp = new Date().toISOString().slice(0, 10);
+    
+    // Add each photo to the zip (prefer full-res from IndexedDB; fallback to thumbnail)
+    const addPromises = photosWithData.map(async (scan, index) => {
+      const filename = scan.photoFilename || `bnsVision_${scan.storeName || `scan_${index + 1}`}_photo.jpg`;
+      let blob = null;
+      if (scan.photoId) {
+        blob = await getPhotoBlob(scan.photoId);
+      }
+      if (!blob && scan.photoData && scan.photoData.startsWith('data:image/')) {
+        const res = await fetch(scan.photoData);
+        blob = await res.blob();
+      }
+      if (blob) {
+        const arrayBuffer = await blob.arrayBuffer();
+        zip.file(filename, arrayBuffer);
+      }
+    });
+    await Promise.all(addPromises);
+    
+    // Generate ZIP file
+    document.getElementById('downloadAllPhotosBtn').textContent = '📦 Creating ZIP...';
+    const zipBlob = await zip.generateAsync({type: 'blob'});
+    
+    // Download the ZIP
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(zipBlob);
+    link.download = `bnsVision_all_photos_${timestamp}.zip`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+    
+    showPhotoSavedNotification(`Successfully downloaded ${photosWithData.length} photos as ZIP file!`, false);
+    
+  } catch (error) {
+    console.error('Bulk download failed:', error);
+    showPhotoSavedNotification('Failed to create photo archive. Try downloading photos individually.', true);
+  } finally {
+    // Reset button
+    document.getElementById('downloadAllPhotosBtn').textContent = originalText;
+    document.getElementById('downloadAllPhotosBtn').disabled = false;
+  }
+});
 
 // --- Manual store location search ---
 const storeSearchInput = document.getElementById('storeSearchInput');
@@ -468,7 +792,11 @@ function performTableSearch() {
       scan.unitNumber,
       scan.address,
       scan.category,
-      scan.remarks
+      scan.remarks,
+      scan.houseNo,
+      scan.street,
+      scan.building,
+      scan.postcode
     ];
     
     for (const field of searchableFields) {
@@ -1084,7 +1412,7 @@ async function performScanFromCanvas(canvas) {
   progressBar.style.display = 'block';
   progressFill.style.width = '0%';
 
-  const imageDataUrl = captureImages ? canvas.toDataURL('image/jpeg', 0.8) : '';
+  const imageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
 
   // Try Vision JSON extraction first
   let parsed = null;
@@ -1160,13 +1488,29 @@ async function performScanFromCanvas(canvas) {
     }
   }
 
+  // Store photo data with the scan
+  const timestamp = new Date().toISOString();
+  const photoId = `photo_${timestamp.replace(/[:.]/g, '-').slice(0, -5)}_${Math.random().toString(36).slice(2,8)}`;
+  const photoFilename = `bnsVision_${parsed?.storeName || 'scan'}_${timestamp.replace(/[:.]/g, '-').slice(0, -5)}.jpg`;
+  // Save full-resolution to IndexedDB; keep thumbnail in memory/localStorage
+  const fullResBlob = await new Promise(resolve => { canvas.toBlob(resolve, 'image/jpeg', 0.9); });
+  if (fullResBlob) {
+    savePhotoBlob(photoId, fullResBlob, photoFilename);
+  }
+  const thumbDataUrl = createThumbnailDataURL(canvas, 400, 400, 0.6);
+
   const info = Object.assign(
-    { lat: finalLat, lng: finalLng, address: address },
+    { 
+      lat: finalLat, 
+      lng: finalLng, 
+      address: address,
+      photoData: thumbDataUrl,
+      timestamp: timestamp,
+      photoFilename: photoFilename,
+      photoId: photoId
+    },
     parsed
   );
-  if (captureImages && imageDataUrl) {
-    info.image = imageDataUrl;
-  }
 
   // Check for duplicates before adding
   if (isDuplicateStore(info)) {
@@ -1188,6 +1532,191 @@ async function performScanFromCanvas(canvas) {
   progressBar.style.display = 'none';
 }
 
+// Helper function to capture and save photo to gallery
+async function captureAndSavePhoto(canvas) {
+  try {
+    // Show visual feedback
+    showPhotoFlash();
+    
+    // Convert canvas to blob with high quality
+    const blob = await new Promise(resolve => {
+      canvas.toBlob(resolve, 'image/jpeg', 0.9);
+    });
+    
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    const filename = `bnsVision_scan_${timestamp}.jpg`;
+    
+    // Try Web Share API first (mobile native sharing)
+    if (navigator.share && navigator.canShare) {
+      const file = new File([blob], filename, { type: 'image/jpeg' });
+      
+      if (navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            title: 'bnsVision Scan Photo',
+            text: `Store scan captured at ${new Date().toLocaleString()}`,
+            files: [file]
+          });
+          
+          console.log('Photo shared successfully via Web Share API');
+          showPhotoSavedNotification('📤 Photo shared successfully');
+          return true;
+        } catch (shareError) {
+          if (shareError.name !== 'AbortError') {
+            console.log('Web Share failed, falling back to download:', shareError);
+          } else {
+            // User cancelled share dialog
+            console.log('User cancelled share dialog');
+            return false;
+          }
+        }
+      }
+    }
+    
+    // Fallback to download with improved UX
+    const url = URL.createObjectURL(blob);
+    
+    // Create temporary download link with better attributes
+    const downloadLink = document.createElement('a');
+    downloadLink.href = url;
+    downloadLink.download = filename;
+    downloadLink.style.display = 'none';
+    
+    // For mobile Safari, try to trigger download more smoothly
+    if (/iPhone|iPad|iPod|Safari/i.test(navigator.userAgent)) {
+      // Add slight delay to ensure flash animation starts
+      setTimeout(() => {
+        document.body.appendChild(downloadLink);
+        
+        // Use both click and programmatic trigger
+        const event = new MouseEvent('click', {
+          bubbles: true,
+          cancelable: true,
+          view: window
+        });
+        downloadLink.dispatchEvent(event);
+        
+        document.body.removeChild(downloadLink);
+      }, 100);
+    } else {
+      // Standard download for other browsers
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+    }
+    
+    // Clean up the blob URL after a short delay
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 1000);
+    
+    console.log(`Photo download initiated: ${filename}`);
+    
+    // Show instruction notification for first-time users
+    showPhotoSavedNotification('📸 Tap "Download" to save photo');
+    
+    return true;
+  } catch (error) {
+    console.error('Error saving photo:', error);
+    showPhotoSavedNotification('❌ Failed to save photo', true);
+    return false;
+  }
+}
+
+// Helper function to show photo saved notification
+function showPhotoSavedNotification(message = '📸 Photo saved to gallery', isError = false) {
+  // Create notification element
+  const notification = document.createElement('div');
+  
+  const backgroundColor = isError ? 'rgba(220, 38, 38, 0.95)' : 'rgba(0, 177, 79, 0.95)';
+  
+  notification.style.cssText = `
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: ${backgroundColor};
+    color: white;
+    padding: 12px 20px;
+    border-radius: 25px;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 9998;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    animation: slideInOut 4s ease-in-out;
+    pointer-events: none;
+    backdrop-filter: blur(10px);
+    max-width: 280px;
+    text-align: center;
+  `;
+  
+  notification.innerHTML = message;
+  
+  // Add slide animation CSS if not already present
+  if (!document.querySelector('#photoNotificationStyle')) {
+    const style = document.createElement('style');
+    style.id = 'photoNotificationStyle';
+    style.textContent = `
+      @keyframes slideInOut {
+        0% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+        12% { opacity: 1; transform: translateX(-50%) translateY(0); }
+        88% { opacity: 1; transform: translateX(-50%) translateY(0); }
+        100% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  
+  document.body.appendChild(notification);
+  
+  // Remove notification after animation
+  setTimeout(() => {
+    if (notification.parentNode) {
+      notification.parentNode.removeChild(notification);
+    }
+  }, 4000);
+}
+
+// Helper function to show photo capture flash effect
+function showPhotoFlash() {
+  // Create flash overlay
+  const flashOverlay = document.createElement('div');
+  flashOverlay.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: white;
+    z-index: 9999;
+    pointer-events: none;
+    animation: photoFlash 0.3s ease-out;
+  `;
+  
+  // Add flash animation CSS if not already present
+  if (!document.querySelector('#photoFlashStyle')) {
+    const style = document.createElement('style');
+    style.id = 'photoFlashStyle';
+    style.textContent = `
+      @keyframes photoFlash {
+        0% { opacity: 0; }
+        50% { opacity: 0.8; }
+        100% { opacity: 0; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  
+  document.body.appendChild(flashOverlay);
+  
+  // Remove flash overlay after animation
+  setTimeout(() => {
+    if (flashOverlay.parentNode) {
+      flashOverlay.parentNode.removeChild(flashOverlay);
+    }
+  }, 300);
+}
+
 // Scan button handler
 document.getElementById('scanBtn').addEventListener('click', async () => {
   if (!video.videoWidth) {
@@ -1207,6 +1736,23 @@ document.getElementById('scanBtn').addEventListener('click', async () => {
   const ctx = canvas.getContext('2d');
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
+  // Check if photo capture is enabled (default: true)
+  const photoCaptureEnabled = localStorage.getItem('photoCaptureEnabled') !== 'false';
+  
+  if (photoCaptureEnabled) {
+    // Capture and save photo to gallery (parallel with scanning)
+    const photoSaved = await captureAndSavePhoto(canvas);
+    
+    if (photoSaved) {
+      console.log('✅ Photo captured and saved to gallery');
+    } else {
+      console.warn('⚠️ Failed to save photo to gallery');
+    }
+  } else {
+    console.log('📸 Photo capture disabled by user');
+  }
+
+  // Continue with normal scanning process
   await performScanFromCanvas(canvas);
 });
 
@@ -1214,7 +1760,7 @@ document.getElementById('scanBtn').addEventListener('click', async () => {
 if (uploadBtn && imageInput) {
   uploadBtn.addEventListener('click', () => imageInput.click());
 
-  imageInput.addEventListener('change', e => {
+  imageInput.addEventListener('change', async e => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
 
@@ -1225,125 +1771,27 @@ if (uploadBtn && imageInput) {
       canvas.height = img.naturalHeight;
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0);
+      
+      // Check if photo capture is enabled for uploaded images too
+      const photoCaptureEnabled = localStorage.getItem('photoCaptureEnabled') !== 'false';
+      
+      if (photoCaptureEnabled) {
+        // Capture and save photo to gallery for uploaded images too
+        const photoSaved = await captureAndSavePhoto(canvas);
+        
+        if (photoSaved) {
+          console.log('✅ Uploaded photo processed and saved to gallery');
+        } else {
+          console.warn('⚠️ Failed to save uploaded photo to gallery');
+        }
+      }
+      
       await performScanFromCanvas(canvas);
       URL.revokeObjectURL(img.src);
     };
     img.src = URL.createObjectURL(file);
     imageInput.value = '';
   });
-}
-
-// Download all captured images as a zip
-async function downloadAllImages() {
-  try {
-    const images = scans
-      .map((s, i) => ({ idx: i + 1, name: (s.storeName || 'Store').toString().trim(), dataUrl: s.image }))
-      .filter(x => x.dataUrl && /^data:image\//.test(x.dataUrl));
-
-    if (!images.length) {
-      alert('No images to download');
-      return;
-    }
-
-    // Detect iOS/iPadOS (including iPadOS masquerading as Mac)
-    const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
-    // If iOS supports Web Share with files, offer Save to Photos via Share Sheet
-    if (isiOS && navigator.canShare && navigator.share) {
-      // Helper to convert data URL to Blob
-      const dataUrlToBlob = (dataUrl) => {
-        const [meta, b64] = dataUrl.split(',');
-        const contentType = (meta.match(/data:(.*?);base64/) || [])[1] || 'image/jpeg';
-        const byteChars = atob(b64);
-        const byteNumbers = new Array(byteChars.length);
-        for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
-        const byteArray = new Uint8Array(byteNumbers);
-        return new Blob([byteArray], { type: contentType });
-      };
-
-      const files = images.map(img => {
-        const safeName = (img.name || 'Store').replace(/[^a-z0-9\- _\.]/gi, '_').slice(0, 80) || 'Store';
-        const fileName = String(img.idx).padStart(3, '0') + ' - ' + safeName + '.jpg';
-        const blob = dataUrlToBlob(img.dataUrl);
-        return new File([blob], fileName, { type: 'image/jpeg' });
-      });
-
-      // iOS may fail on too many/large files. Share in small batches.
-      const chunk = (arr, size) => arr.reduce((acc, _, i) => (i % size ? acc : [...acc, arr.slice(i, i + size)]), []);
-      const batches = chunk(files, 10); // 10 files per share as a safe default
-
-      for (const batch of batches) {
-        if (navigator.canShare({ files: batch })) {
-          try {
-            await navigator.share({ files: batch, title: 'Storefront Images', text: 'Save images to Photos' });
-          } catch (err) {
-            if (err && err.name === 'AbortError') {
-              // User cancelled share sheet; stop further batches
-              return;
-            }
-            console.warn('Share failed, falling back to ZIP for this batch:', err);
-            // Fall back to ZIP for this batch
-            await downloadImagesAsZip(batch);
-          }
-        } else {
-          // Device cannot share this batch; fall back to ZIP
-          await downloadImagesAsZip(batch);
-        }
-      }
-      return; // iOS handled via share
-    }
-
-    // Non-iOS or missing Web Share: zip and download
-    await downloadImagesAsZip(images);
-  } catch (err) {
-    console.error('Failed to download images:', err);
-    alert('Failed to download images. Check console for details.');
-  }
-}
-
-if (downloadImagesBtn) {
-  downloadImagesBtn.addEventListener('click', downloadAllImages);
-}
-
-// Helper: ZIP a set of images and download
-async function downloadImagesAsZip(items) {
-  // Normalize items: could be array of File or our {idx,name,dataUrl}
-  const isFile = items.length && items[0] instanceof File;
-
-  if (typeof JSZip === 'undefined') {
-    alert('ZIP library not loaded. Please check your connection and try again.');
-    return;
-  }
-
-  const zip = new JSZip();
-
-  if (isFile) {
-    items.forEach((file, index) => {
-      const name = file.name || `image_${index + 1}.jpg`;
-      zip.file(name, file);
-    });
-  } else {
-    const dataUrlToUint8Array = (dataUrl) => {
-      const parts = dataUrl.split(',');
-      const base64 = parts[1];
-      const binary = atob(base64);
-      const len = binary.length;
-      const bytes = new Uint8Array(len);
-      for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
-      return bytes;
-    };
-
-    items.forEach((img) => {
-      const safeName = (img.name || 'Store').replace(/[^a-z0-9\- _\.]/gi, '_').slice(0, 80) || 'Store';
-      const fileName = String(img.idx).padStart(3, '0') + ' - ' + safeName + '.jpg';
-      const bytes = dataUrlToUint8Array(img.dataUrl);
-      zip.file(fileName, bytes);
-    });
-  }
-
-  const blob = await zip.generateAsync({ type: 'blob' });
-  triggerDownloadBlob(blob, 'storefront_images.zip');
 }
 
 // Extract structured information from raw OCR text
@@ -2166,6 +2614,36 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Map close button event listeners added');
   } else {
     console.error('Map close button or overlay not found:', { mapCloseBtn, fullMapOverlay });
+  }
+
+  // Photo capture toggle functionality
+  const photoCaptureToggle = document.getElementById('photoCaptureToggle');
+  if (photoCaptureToggle) {
+    // Initialize toggle state
+    const updateToggleButton = () => {
+      const isEnabled = localStorage.getItem('photoCaptureEnabled') !== 'false';
+      photoCaptureToggle.textContent = isEnabled ? '📸 Photo: ON' : '📸 Photo: OFF';
+      photoCaptureToggle.classList.toggle('disabled', !isEnabled);
+      photoCaptureToggle.title = isEnabled ? 'Click to disable photo capture' : 'Click to enable photo capture';
+    };
+    
+    // Set initial state
+    updateToggleButton();
+    
+    // Toggle functionality
+    photoCaptureToggle.addEventListener('click', () => {
+      const currentState = localStorage.getItem('photoCaptureEnabled') !== 'false';
+      const newState = !currentState;
+      
+      localStorage.setItem('photoCaptureEnabled', newState.toString());
+      updateToggleButton();
+      
+      // Show feedback
+      const message = newState ? '📸 Photo capture enabled' : '📸 Photo capture disabled';
+      showPhotoSavedNotification(message);
+      
+      console.log(`Photo capture ${newState ? 'enabled' : 'disabled'}`);
+    });
   }
 
   // Add backup close methods
