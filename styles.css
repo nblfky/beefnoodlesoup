@@ -1304,6 +1304,12 @@
       background: rgba(255, 255, 255, 0.3);
     }
 
+    /* Toggle style */
+    .map-btn.active {
+      background: rgba(255, 255, 255, 0.9);
+      color: var(--primary);
+    }
+
     .map-close-btn {
       background: rgba(255, 255, 255, 0.95) !important;
       border: 2px solid rgba(0, 177, 79, 0.3) !important;
@@ -1501,13 +1507,33 @@
 /* Scan status markers (pending vs scanned) */
 .scan-status-marker {
   background: transparent !important;
-  color: #ff5252;
-  font-size: 22px;
+  color: #ff5252; /* default */
+  font-size: 22px; /* fallback dot */
   line-height: 12px;
   text-align: center;
 }
 .scan-status-marker.scanned { color: #00b14f; }
 .scan-status-marker.pending { color: #ff9800; }
+
+/* Red cross marker styling */
+.cross-marker {
+  width: 18px;
+  height: 18px;
+  position: relative;
+}
+.cross-marker::before,
+.cross-marker::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 2px;
+  height: 18px;
+  background: #e53935;
+  transform-origin: center;
+}
+.cross-marker::before { transform: translate(-50%, -50%) rotate(45deg); }
+.cross-marker::after { transform: translate(-50%, -50%) rotate(-45deg); }
 
     .user-location-container {
       position: relative;

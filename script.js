@@ -2158,6 +2158,7 @@ let lastUserLocation = null;
 let annotationLayer = null; // FeatureGroup for drawn items
 let drawControl = null;
 const ANNOTATIONS_KEY = 'bnsv_annotations_geojson_v1';
+let addRoutePointMode = false;
 
 function loadAnnotations() {
   try {
@@ -2238,9 +2239,11 @@ function initializeMaps() {
       addTileLayersToMap(fullMap);
       console.log('Full map initialized successfully');
 
-      // Add click handler for route planning
+      // Click-to-add route points is gated by explicit mode to avoid interference with drawing tools
       fullMap.on('click', function(e) {
-        addRoutePoint(e.latlng);
+        if (addRoutePointMode) {
+          addRoutePoint(e.latlng);
+        }
       });
 
       // Initialize annotations layer and controls
@@ -2255,7 +2258,7 @@ function initializeMaps() {
             rectangle: { shapeOptions: { color: '#3f51b5', weight: 2, fillOpacity: 0.1 } },
             circle: false,
             circlemarker: false,
-            marker: { icon: L.divIcon({ className: 'scan-status-marker pending', html: '•', iconSize: [12,12] }) }
+            marker: { icon: L.divIcon({ className: 'scan-status-marker pending', html: '<div class="cross-marker"></div>', iconSize: [18,18], iconAnchor: [9,9] }) }
           },
           edit: {
             featureGroup: annotationLayer,
@@ -2273,7 +2276,7 @@ function initializeMaps() {
         L.geoJSON(saved, {
           pointToLayer: function(feature, latlng) {
             const status = feature.properties && feature.properties.status || 'pending';
-            return L.marker(latlng, { icon: L.divIcon({ className: `scan-status-marker ${status}`, html: '•', iconSize: [12,12] }) });
+            return L.marker(latlng, { icon: L.divIcon({ className: `scan-status-marker ${status}`, html: '<div class="cross-marker"></div>', iconSize: [18,18], iconAnchor: [9,9] }) });
           },
           style: function(feature) {
             return feature.properties && feature.properties._style || {};
@@ -2802,6 +2805,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const clearRouteBtn = document.getElementById('clearRouteBtn');
   const optimizeRouteBtn = document.getElementById('optimizeRouteBtn');
   const centerOnUserBtn = document.getElementById('centerOnUserBtn');
+  const addRoutePointModeBtn = document.getElementById('addRoutePointModeBtn');
 
   if (clearRouteBtn) {
     clearRouteBtn.addEventListener('click', clearRoute);
@@ -2830,6 +2834,14 @@ document.addEventListener('DOMContentLoaded', function() {
       } else {
         alert('User location not available. Please ensure location services are enabled.');
       }
+    });
+  }
+
+  if (addRoutePointModeBtn) {
+    addRoutePointModeBtn.addEventListener('click', function() {
+      addRoutePointMode = !addRoutePointMode;
+      addRoutePointModeBtn.classList.toggle('active', addRoutePointMode);
+      addRoutePointModeBtn.textContent = addRoutePointMode ? 'Adding… (tap map)' : 'Add Point';
     });
   }
 
@@ -3164,7 +3176,7 @@ function attachAnnotationHandlers(layer, props = {}) {
       layer.feature = layer.feature || { type: 'Feature', properties: {} };
       layer.feature.properties.status = next;
       // Update icon color via class
-      const icon = L.divIcon({ className: `scan-status-marker ${next}`, html: '•', iconSize: [12,12] });
+      const icon = L.divIcon({ className: `scan-status-marker ${next}`, html: '<div class="cross-marker"></div>', iconSize: [18,18], iconAnchor: [9,9] });
       layer.setIcon(icon);
       saveAnnotations();
     }
