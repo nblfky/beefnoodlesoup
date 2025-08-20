@@ -2831,7 +2831,6 @@ document.addEventListener('DOMContentLoaded', function() {
   const centerOnUserBtn = document.getElementById('centerOnUserBtn');
   const addRoutePointModeBtn = document.getElementById('addRoutePointModeBtn');
   const markerStyleBtn = document.getElementById('markerStyleBtn');
-  const freehandLineBtn = document.getElementById('freehandLineBtn');
 
   if (clearRouteBtn) {
     clearRouteBtn.addEventListener('click', clearRoute);
@@ -2901,15 +2900,7 @@ document.addEventListener('DOMContentLoaded', function() {
     markerStyleBtn.addEventListener('touchend', function(e){ e.preventDefault(); handler(); });
   }
 
-  // Explicit line tool button (starts Leaflet.Draw polyline immediately)
-  if (freehandLineBtn && typeof L !== 'undefined' && L.Draw && L.Draw.Polyline) {
-    freehandLineBtn.addEventListener('click', function() {
-      try {
-        const drawer = new L.Draw.Polyline(fullMap, { shapeOptions: { color: '#ff9800', weight: 3 } });
-        drawer.enable();
-      } catch (_) {}
-    });
-  }
+  // Removed freehand line button to reduce header crowding
 
   // Manual location request button
   if (requestLocationBtn) {
