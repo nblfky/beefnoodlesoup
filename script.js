@@ -2155,6 +2155,25 @@ let routeLine = null;
 let teamMarkers = [];
 let followUserLocation = true;
 let lastUserLocation = null;
+let annotationLayer = null; // FeatureGroup for drawn items
+let drawControl = null;
+const ANNOTATIONS_KEY = 'bnsv_annotations_geojson_v1';
+
+function loadAnnotations() {
+  try {
+    const json = localStorage.getItem(ANNOTATIONS_KEY);
+    if (!json) return null;
+    return JSON.parse(json);
+  } catch (_) {
+    return null;
+  }
+}
+
+function saveAnnotations() {
+  if (!annotationLayer) return;
+  const geojson = annotationLayer.toGeoJSON();
+  localStorage.setItem(ANNOTATIONS_KEY, JSON.stringify(geojson));
+}
 
 // Initialize maps with fallback tile sources
 function initializeMaps() {
@@ -2222,6 +2241,67 @@ function initializeMaps() {
       // Add click handler for route planning
       fullMap.on('click', function(e) {
         addRoutePoint(e.latlng);
+      });
+
+      // Initialize annotations layer and controls
+      annotationLayer = new L.FeatureGroup();
+      fullMap.addLayer(annotationLayer);
+      try {
+        drawControl = new L.Control.Draw({
+          position: 'topright',
+          draw: {
+            polyline: { shapeOptions: { color: '#ff9800', weight: 3 } },
+            polygon: { allowIntersection: false, showArea: true, shapeOptions: { color: '#e91e63', weight: 2, fillOpacity: 0.1 } },
+            rectangle: { shapeOptions: { color: '#3f51b5', weight: 2, fillOpacity: 0.1 } },
+            circle: false,
+            circlemarker: false,
+            marker: { icon: L.divIcon({ className: 'scan-status-marker pending', html: '•', iconSize: [12,12] }) }
+          },
+          edit: {
+            featureGroup: annotationLayer,
+            remove: true
+          }
+        });
+        fullMap.addControl(drawControl);
+      } catch (e) {
+        console.warn('Leaflet.Draw not available');
+      }
+
+      // Restore saved annotations
+      const saved = loadAnnotations();
+      if (saved && saved.type === 'FeatureCollection') {
+        L.geoJSON(saved, {
+          pointToLayer: function(feature, latlng) {
+            const status = feature.properties && feature.properties.status || 'pending';
+            return L.marker(latlng, { icon: L.divIcon({ className: `scan-status-marker ${status}`, html: '•', iconSize: [12,12] }) });
+          },
+          style: function(feature) {
+            return feature.properties && feature.properties._style || {};
+          },
+          onEachFeature: function(feature, layer) {
+            attachAnnotationHandlers(layer, feature.properties || {});
+          }
+        }).eachLayer(l => annotationLayer.addLayer(l));
+      }
+
+      // Handle creation/edit/delete
+      fullMap.on(L.Draw.Event.CREATED, function (evt) {
+        const layer = evt.layer;
+        // Default properties
+        layer.feature = layer.feature || { type: 'Feature', properties: {} };
+        if (layer instanceof L.Marker) {
+          layer.feature.properties.status = 'pending';
+        }
+        attachAnnotationHandlers(layer, layer.feature.properties);
+        annotationLayer.addLayer(layer);
+        saveAnnotations();
+      });
+
+      fullMap.on(L.Draw.Event.EDITED, function () {
+        saveAnnotations();
+      });
+      fullMap.on(L.Draw.Event.DELETED, function () {
+        saveAnnotations();
       });
       
     } catch (error) {
@@ -3061,3 +3141,32 @@ function addMapInteractionHandlers() {
 
 // Make functions globally available
 window.removeRoutePoint = removeRoutePoint; 
+
+// Attach context menu handlers to toggle scanned/pending and set styles
+function attachAnnotationHandlers(layer, props = {}) {
+  // Persist style on polylines/polygons when edited
+  if (layer.setStyle) {
+    const style = layer.options || {};
+    layer.feature = layer.feature || { type: 'Feature', properties: {} };
+    layer.feature.properties._style = {
+      color: style.color,
+      weight: style.weight,
+      fillColor: style.fillColor,
+      fillOpacity: style.fillOpacity
+    };
+  }
+  // Right-click or long-press menu
+  layer.on('contextmenu', function(e) {
+    if (layer instanceof L.Marker) {
+      // Toggle scanned/pending
+      const current = (layer.feature && layer.feature.properties && layer.feature.properties.status) || 'pending';
+      const next = current === 'scanned' ? 'pending' : 'scanned';
+      layer.feature = layer.feature || { type: 'Feature', properties: {} };
+      layer.feature.properties.status = next;
+      // Update icon color via class
+      const icon = L.divIcon({ className: `scan-status-marker ${next}`, html: '•', iconSize: [12,12] });
+      layer.setIcon(icon);
+      saveAnnotations();
+    }
+  });
+}

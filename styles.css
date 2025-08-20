@@ -1498,6 +1498,17 @@
       border: none !important;
     }
 
+/* Scan status markers (pending vs scanned) */
+.scan-status-marker {
+  background: transparent !important;
+  color: #ff5252;
+  font-size: 22px;
+  line-height: 12px;
+  text-align: center;
+}
+.scan-status-marker.scanned { color: #00b14f; }
+.scan-status-marker.pending { color: #ff9800; }
+
     .user-location-container {
       position: relative;
       width: 30px;
