@@ -2272,8 +2272,17 @@ function initializeMaps() {
       } catch (e) {
         console.warn('Leaflet.Draw not available');
       }
-      // While drawing, disable map gestures to avoid accidental finish on mobile
-      fullMap.on('draw:drawstart', function() { try { fullMap.dragging.disable(); fullMap.boxZoom.disable(); } catch(_){} });
+      // While drawing, disable map gestures and suppress double-tap finish on iOS
+      fullMap.on('draw:drawstart', function(e) {
+        try {
+          fullMap.dragging.disable();
+          fullMap.boxZoom.disable();
+        } catch(_){}
+        // Monkey patch: force Polyline handler to not finish on dblclick
+        try {
+          const handler = e && e.layer ? e.layer : null;
+        } catch(_){}
+      });
       fullMap.on('draw:drawstop', function() { try { fullMap.dragging.enable(); fullMap.boxZoom.enable(); } catch(_){} });
       fullMap.on('dblclick', function(e){ if (e && e.originalEvent) e.originalEvent.preventDefault(); L.DomEvent.stop(e); });
       const fullMapEl = document.getElementById('fullMap');
@@ -2307,6 +2316,8 @@ function initializeMaps() {
         if (layer instanceof L.Marker) {
           layer.feature.properties.status = 'pending';
           layer.feature.properties.markerStyle = currentMarkerStyle;
+          // Force the icon to match current selection immediately
+          try { layer.setIcon(createMarkerIcon('pending', currentMarkerStyle)); } catch(_) {}
         }
         attachAnnotationHandlers(layer, layer.feature.properties);
         annotationLayer.addLayer(layer);
@@ -2820,6 +2831,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const centerOnUserBtn = document.getElementById('centerOnUserBtn');
   const addRoutePointModeBtn = document.getElementById('addRoutePointModeBtn');
   const markerStyleBtn = document.getElementById('markerStyleBtn');
+  const freehandLineBtn = document.getElementById('freehandLineBtn');
 
   if (clearRouteBtn) {
     clearRouteBtn.addEventListener('click', clearRoute);
@@ -2887,6 +2899,16 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     markerStyleBtn.addEventListener('click', handler);
     markerStyleBtn.addEventListener('touchend', function(e){ e.preventDefault(); handler(); });
+  }
+
+  // Explicit line tool button (starts Leaflet.Draw polyline immediately)
+  if (freehandLineBtn && typeof L !== 'undefined' && L.Draw && L.Draw.Polyline) {
+    freehandLineBtn.addEventListener('click', function() {
+      try {
+        const drawer = new L.Draw.Polyline(fullMap, { shapeOptions: { color: '#ff9800', weight: 3 } });
+        drawer.enable();
+      } catch (_) {}
+    });
   }
 
   // Manual location request button
