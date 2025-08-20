@@ -1250,6 +1250,9 @@ async function initCamera() {
       audio: false
     });
     video.srcObject = stream;
+    window.currentCameraStream = stream;
+    // After permission granted, enumerate to find ultra-wide if available
+    detectAvailableCameras().catch(()=>{});
   } catch (err) {
     console.error(err);
     statusDiv.textContent = 'Camera access denied: ' + err.message;
@@ -1265,12 +1268,90 @@ const minZoom = 0.5; // allow zooming out to 0.5x
 const maxZoom = 5.0;
 const zoomStep = 0.2;
 
+// Device-based zoom (switching physical lenses when available)
+let cameraDevices = { wide: null, ultra: null };
+let currentCameraType = 'wide';
+let isSwitchingCamera = false;
+
+async function detectAvailableCameras() {
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const videoInputs = devices.filter(d => d.kind === 'videoinput');
+    const labelsKnown = videoInputs.some(d => d.label);
+    // Try to infer wide from current track
+    const currentTrack = (window.currentCameraStream && window.currentCameraStream.getVideoTracks()[0]) || null;
+    if (currentTrack) {
+      const settings = currentTrack.getSettings && currentTrack.getSettings();
+      if (settings && settings.deviceId) cameraDevices.wide = settings.deviceId;
+    }
+    for (const d of videoInputs) {
+      const label = (d.label || '').toLowerCase();
+      if (!cameraDevices.wide) {
+        // Prefer back/environment camera for wide
+        if (label.includes('back') || label.includes('rear') || label.includes('environment')) {
+          cameraDevices.wide = d.deviceId;
+        }
+      }
+      if (!cameraDevices.ultra) {
+        if (label.includes('ultra') || label.includes('ultra-wide') || /\b0\.5\b/.test(label) || label.includes('0.5')) {
+          cameraDevices.ultra = d.deviceId;
+        }
+      }
+    }
+    // Fallback wide: first videoinput
+    if (!cameraDevices.wide && videoInputs[0]) cameraDevices.wide = videoInputs[0].deviceId;
+    return { ...cameraDevices, labelsKnown };
+  } catch (e) {
+    return cameraDevices;
+  }
+}
+
+async function switchToCamera(type) {
+  if (isSwitchingCamera) return;
+  const targetId = type === 'ultra' ? cameraDevices.ultra : cameraDevices.wide;
+  if (!targetId) return; // nothing to do
+  try {
+    isSwitchingCamera = true;
+    const newStream = await navigator.mediaDevices.getUserMedia({
+      video: { deviceId: { exact: targetId } },
+      audio: false
+    });
+    // Stop previous tracks
+    const old = window.currentCameraStream;
+    if (old) {
+      old.getTracks().forEach(t => t.stop());
+    }
+    window.currentCameraStream = newStream;
+    video.srcObject = newStream;
+    currentCameraType = type;
+    // When switching lens, reset CSS transform to 1 to reflect native FOV
+    video.style.transform = 'scale(1)';
+    zoomLevelSpan.textContent = type === 'ultra' ? '0.5x' : '1.0x';
+  } catch (e) {
+    // ignore failures
+  } finally {
+    isSwitchingCamera = false;
+  }
+}
+
 // Zoom state management
 function updateZoomLevel(newZoom) {
   currentZoom = Math.max(minZoom, Math.min(maxZoom, newZoom));
   
-  // Apply zoom transform to video
-  video.style.transform = `scale(${currentZoom})`;
+  // If user requests <= ~0.6x and an ultra-wide lens exists, switch to it
+  if (currentZoom <= 0.6 && currentCameraType !== 'ultra' && cameraDevices.ultra) {
+    switchToCamera('ultra');
+    // Keep CSS at 1 when using hardware ultra-wide; snap display to 0.5x
+    currentZoom = 0.5;
+  } else if (currentZoom > 0.6 && currentCameraType !== 'wide' && cameraDevices.wide) {
+    // Switch back to the wide lens for >0.6x
+    switchToCamera('wide');
+    currentZoom = Math.max(1.0, currentZoom);
+  }
+
+  // Apply CSS zoom only as a visual fallback for micro-adjustments
+  const cssScale = currentCameraType === 'ultra' ? Math.max(1, currentZoom / 0.5) : currentZoom;
+  video.style.transform = `scale(${cssScale})`;
   video.style.transformOrigin = 'center center';
   
   // Update zoom level display
