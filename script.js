@@ -2159,6 +2159,7 @@ let annotationLayer = null; // FeatureGroup for drawn items
 let drawControl = null;
 const ANNOTATIONS_KEY = 'bnsv_annotations_geojson_v1';
 let addRoutePointMode = false;
+let currentMarkerStyle = 'cross'; // 'cross' | 'dot' | 'circle'
 
 function loadAnnotations() {
   try {
@@ -2253,12 +2254,12 @@ function initializeMaps() {
         drawControl = new L.Control.Draw({
           position: 'topright',
           draw: {
-            polyline: { shapeOptions: { color: '#ff9800', weight: 3 } },
+            polyline: { shapeOptions: { color: '#ff9800', weight: 3 }, touchExtend: true },
             polygon: { allowIntersection: false, showArea: true, shapeOptions: { color: '#e91e63', weight: 2, fillOpacity: 0.1 } },
             rectangle: { shapeOptions: { color: '#3f51b5', weight: 2, fillOpacity: 0.1 } },
             circle: false,
             circlemarker: false,
-            marker: { icon: L.divIcon({ className: 'scan-status-marker pending', html: '<div class="cross-marker"></div>', iconSize: [18,18], iconAnchor: [9,9] }) }
+            marker: { icon: createMarkerIcon('pending') }
           },
           edit: {
             featureGroup: annotationLayer,
@@ -2276,7 +2277,8 @@ function initializeMaps() {
         L.geoJSON(saved, {
           pointToLayer: function(feature, latlng) {
             const status = feature.properties && feature.properties.status || 'pending';
-            return L.marker(latlng, { icon: L.divIcon({ className: `scan-status-marker ${status}`, html: '<div class="cross-marker"></div>', iconSize: [18,18], iconAnchor: [9,9] }) });
+            const style = feature.properties && feature.properties.markerStyle || currentMarkerStyle;
+            return L.marker(latlng, { icon: createMarkerIcon(status, style) });
           },
           style: function(feature) {
             return feature.properties && feature.properties._style || {};
@@ -2294,6 +2296,7 @@ function initializeMaps() {
         layer.feature = layer.feature || { type: 'Feature', properties: {} };
         if (layer instanceof L.Marker) {
           layer.feature.properties.status = 'pending';
+          layer.feature.properties.markerStyle = currentMarkerStyle;
         }
         attachAnnotationHandlers(layer, layer.feature.properties);
         annotationLayer.addLayer(layer);
@@ -2806,6 +2809,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const optimizeRouteBtn = document.getElementById('optimizeRouteBtn');
   const centerOnUserBtn = document.getElementById('centerOnUserBtn');
   const addRoutePointModeBtn = document.getElementById('addRoutePointModeBtn');
+  const markerStyleBtn = document.getElementById('markerStyleBtn');
 
   if (clearRouteBtn) {
     clearRouteBtn.addEventListener('click', clearRoute);
@@ -2842,6 +2846,20 @@ document.addEventListener('DOMContentLoaded', function() {
       addRoutePointMode = !addRoutePointMode;
       addRoutePointModeBtn.classList.toggle('active', addRoutePointMode);
       addRoutePointModeBtn.textContent = addRoutePointMode ? 'Adding… (tap map)' : 'Add Point';
+    });
+  }
+
+  if (markerStyleBtn) {
+    markerStyleBtn.addEventListener('click', function() {
+      currentMarkerStyle = currentMarkerStyle === 'cross' ? 'dot' : currentMarkerStyle === 'dot' ? 'circle' : 'cross';
+      const label = currentMarkerStyle === 'cross' ? 'Marker: Cross' : currentMarkerStyle === 'dot' ? 'Marker: Dot' : 'Marker: Circle';
+      markerStyleBtn.textContent = label;
+      // Update draw control marker icon live if possible
+      try {
+        if (drawControl && drawControl.options && drawControl.options.draw) {
+          drawControl.options.draw.marker.icon = createMarkerIcon('pending', currentMarkerStyle);
+        }
+      } catch(_) {}
     });
   }
 
@@ -3175,10 +3193,17 @@ function attachAnnotationHandlers(layer, props = {}) {
       const next = current === 'scanned' ? 'pending' : 'scanned';
       layer.feature = layer.feature || { type: 'Feature', properties: {} };
       layer.feature.properties.status = next;
-      // Update icon color via class
-      const icon = L.divIcon({ className: `scan-status-marker ${next}`, html: '<div class="cross-marker"></div>', iconSize: [18,18], iconAnchor: [9,9] });
+      const style = (layer.feature.properties && layer.feature.properties.markerStyle) || currentMarkerStyle;
+      const icon = createMarkerIcon(next, style);
       layer.setIcon(icon);
       saveAnnotations();
     }
   });
+}
+
+function createMarkerIcon(status = 'pending', style = currentMarkerStyle) {
+  let html = '<div class="cross-marker"></div>';
+  if (style === 'dot') html = '<div class="dot-marker"></div>';
+  if (style === 'circle') html = '<div class="circle-marker"></div>';
+  return L.divIcon({ className: `scan-status-marker ${status}`, html, iconSize: [18,18], iconAnchor: [9,9] });
 }
