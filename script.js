@@ -2233,7 +2233,9 @@ function initializeMaps() {
     try {
       fullMap = L.map('fullMap', {
         zoomControl: true,
-        attributionControl: true
+        attributionControl: true,
+        doubleClickZoom: false,
+        tap: false
       }).setView([1.3521, 103.8198], 12);
 
       // Add tile layers with fallback
@@ -2254,12 +2256,12 @@ function initializeMaps() {
         drawControl = new L.Control.Draw({
           position: 'topright',
           draw: {
-            polyline: { shapeOptions: { color: '#ff9800', weight: 3 }, touchExtend: true },
+            polyline: { shapeOptions: { color: '#ff9800', weight: 3 }, touchExtend: true, repeatMode: true },
             polygon: { allowIntersection: false, showArea: true, shapeOptions: { color: '#e91e63', weight: 2, fillOpacity: 0.1 } },
             rectangle: { shapeOptions: { color: '#3f51b5', weight: 2, fillOpacity: 0.1 } },
             circle: false,
             circlemarker: false,
-            marker: { icon: createMarkerIcon('pending') }
+            marker: { icon: createMarkerIcon('pending'), repeatMode: true }
           },
           edit: {
             featureGroup: annotationLayer,
@@ -2270,6 +2272,10 @@ function initializeMaps() {
       } catch (e) {
         console.warn('Leaflet.Draw not available');
       }
+      // While drawing, disable map dragging to avoid accidental finish on mobile
+      fullMap.on('draw:drawstart', function() { try { fullMap.dragging.disable(); } catch(_){} });
+      fullMap.on('draw:drawstop', function() { try { fullMap.dragging.enable(); } catch(_){} });
+      fullMap.on('dblclick', function(e){ if (e && e.originalEvent) e.originalEvent.preventDefault(); });
 
       // Restore saved annotations
       const saved = loadAnnotations();
@@ -2850,7 +2856,8 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   if (markerStyleBtn) {
-    markerStyleBtn.addEventListener('click', function() {
+    // Avoid focusing issues on mobile by using pointerup
+    const handler = function() {
       currentMarkerStyle = currentMarkerStyle === 'cross' ? 'dot' : currentMarkerStyle === 'dot' ? 'circle' : 'cross';
       const label = currentMarkerStyle === 'cross' ? 'Marker: Cross' : currentMarkerStyle === 'dot' ? 'Marker: Dot' : 'Marker: Circle';
       markerStyleBtn.textContent = label;
@@ -2860,7 +2867,9 @@ document.addEventListener('DOMContentLoaded', function() {
           drawControl.options.draw.marker.icon = createMarkerIcon('pending', currentMarkerStyle);
         }
       } catch(_) {}
-    });
+    };
+    markerStyleBtn.addEventListener('click', handler);
+    markerStyleBtn.addEventListener('touchend', function(e){ e.preventDefault(); handler(); });
   }
 
   // Manual location request button
