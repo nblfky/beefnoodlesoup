@@ -80,6 +80,22 @@ const zoomLevelSpan = document.getElementById('zoomLevel');
 
 // Persistent scans storage
 let scans = [];
+// --- Networking helpers and timeouts ---
+const GEO_FAST_TIMEOUT_MS = 3000; // 3s fast location for scans
+const SEARCH_TIMEOUT_MS = 4000;   // 4s for OneMap search
+const REVERSE_TIMEOUT_MS = 4000;  // 4s for reverse geocode
+
+async function fetchWithTimeout(url, { timeoutMs, ...options } = {}) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs || 5000);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    return res;
+  } finally {
+    clearTimeout(id);
+  }
+}
+
 
 // Photo storage and deferred save utilities
 const PHOTO_DB_NAME = 'bnsv_photo_db';
@@ -955,7 +971,7 @@ function getCurrentLocation(initial = false) {
         if (!initial) console.warn('Geolocation error', err.message);
         resolve({ lat: '', lng: '' });
       },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
+      { enableHighAccuracy: true, timeout: GEO_FAST_TIMEOUT_MS, maximumAge: 60000 }
     );
   });
 }
@@ -976,7 +992,7 @@ async function reverseGeocode(lat, lng) {
   try {
     // Newer API version expects separate lat & lon query params (see https://docs.onemap.sg/#revgeocode)
     const url = `https://developers.onemap.sg/commonapi/revgeocode?lat=${lat}&lon=${lng}&returnGeom=N&getAddrDetails=Y`;
-    const res = await fetch(url);
+    const res = await fetchWithTimeout(url, { timeoutMs: REVERSE_TIMEOUT_MS });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
 
@@ -1026,7 +1042,7 @@ async function searchStoreLocation(storeName, currentLat = null, currentLng = nu
       console.log('OneMap API key available for future authenticated endpoints');
     }
     
-    const res = await fetch(url, { headers });
+    const res = await fetchWithTimeout(url, { headers, timeoutMs: SEARCH_TIMEOUT_MS });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
 
@@ -1557,6 +1573,7 @@ async function performScanFromCanvas(canvas) {
     }
   }
 
+  // Try to get a quick location, but don't block scanning
   let geo = currentLocation;
   if (!geo.lat) {
     geo = await getCurrentLocation();
@@ -1596,7 +1613,9 @@ async function performScanFromCanvas(canvas) {
   if (parsed && parsed.storeName && parsed.storeName !== 'Not Found') {
     showScanningOverlay('Finding location...');
     statusDiv.textContent = 'Finding store location…';
-    storeLocation = await searchStoreLocation(parsed.storeName, geo.lat, geo.lng);
+    try {
+      storeLocation = await searchStoreLocation(parsed.storeName, geo.lat, geo.lng);
+    } catch (_) { storeLocation = null; }
   }
 
   // Use store location if found, otherwise fallback to current device location
@@ -1610,10 +1629,9 @@ async function performScanFromCanvas(canvas) {
     // Fallback to device location and reverse geocode
     finalLat = geo.lat || 'Not Found';
     finalLng = geo.lng || 'Not Found';
-    
-  if (geo.lat && geo.lng) {
-    address = await reverseGeocode(geo.lat, geo.lng);
-  }
+    if (geo.lat && geo.lng) {
+      try { address = await reverseGeocode(geo.lat, geo.lng); } catch (_) { address = ''; }
+    }
     
     if (!address) {
       address = parsed.address || 'Not Found';
