@@ -1259,8 +1259,9 @@ async function initCamera() {
 initCamera();
 
 // --- Zoom functionality ---
-let currentZoom = 1.0;
-const minZoom = 1.0;
+const defaultZoom = 1.0;
+let currentZoom = defaultZoom;
+const minZoom = 0.5; // allow zooming out to 0.5x
 const maxZoom = 5.0;
 const zoomStep = 0.2;
 
@@ -1293,7 +1294,7 @@ zoomOutBtn.addEventListener('click', () => {
 });
 
 zoomResetBtn.addEventListener('click', () => {
-  updateZoomLevel(minZoom);
+  updateZoomLevel(defaultZoom);
 });
 
 // Mouse wheel zoom for desktop
@@ -1585,90 +1586,11 @@ async function performScanFromCanvas(canvas) {
 // Helper function to capture and save photo to gallery
 async function captureAndSavePhoto(canvas) {
   try {
-    // Show visual feedback
+    // Visual feedback only; no auto share or download
     showPhotoFlash();
-    
-    // Convert canvas to blob with high quality
-    const blob = await new Promise(resolve => {
-      canvas.toBlob(resolve, 'image/jpeg', 0.9);
-    });
-    
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-    const filename = `bnsVision_scan_${timestamp}.jpg`;
-    
-    // Try Web Share API first (mobile native sharing)
-    if (navigator.share && navigator.canShare) {
-      const file = new File([blob], filename, { type: 'image/jpeg' });
-      
-      if (navigator.canShare({ files: [file] })) {
-        try {
-          await navigator.share({
-            title: 'bnsVision Scan Photo',
-            text: `Store scan captured at ${new Date().toLocaleString()}`,
-            files: [file]
-          });
-          
-          console.log('Photo shared successfully via Web Share API');
-          showPhotoSavedNotification('📤 Photo shared successfully');
-          return true;
-        } catch (shareError) {
-          if (shareError.name !== 'AbortError') {
-            console.log('Web Share failed, falling back to download:', shareError);
-          } else {
-            // User cancelled share dialog
-            console.log('User cancelled share dialog');
-            return false;
-          }
-        }
-      }
-    }
-    
-    // Fallback to download with improved UX
-    const url = URL.createObjectURL(blob);
-    
-    // Create temporary download link with better attributes
-    const downloadLink = document.createElement('a');
-    downloadLink.href = url;
-    downloadLink.download = filename;
-    downloadLink.style.display = 'none';
-    
-    // For mobile Safari, try to trigger download more smoothly
-    if (/iPhone|iPad|iPod|Safari/i.test(navigator.userAgent)) {
-      // Add slight delay to ensure flash animation starts
-      setTimeout(() => {
-        document.body.appendChild(downloadLink);
-        
-        // Use both click and programmatic trigger
-        const event = new MouseEvent('click', {
-          bubbles: true,
-          cancelable: true,
-          view: window
-        });
-        downloadLink.dispatchEvent(event);
-        
-        document.body.removeChild(downloadLink);
-      }, 100);
-    } else {
-      // Standard download for other browsers
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
-    }
-    
-    // Clean up the blob URL after a short delay
-    setTimeout(() => {
-      URL.revokeObjectURL(url);
-    }, 1000);
-    
-    console.log(`Photo download initiated: ${filename}`);
-    
-    // Show instruction notification for first-time users
-    showPhotoSavedNotification('📸 Tap "Download" to save photo');
-    
     return true;
   } catch (error) {
     console.error('Error saving photo:', error);
-    showPhotoSavedNotification('❌ Failed to save photo', true);
     return false;
   }
 }
