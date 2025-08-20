@@ -2256,12 +2256,12 @@ function initializeMaps() {
         drawControl = new L.Control.Draw({
           position: 'topright',
           draw: {
-            polyline: { shapeOptions: { color: '#ff9800', weight: 3 }, touchExtend: true, repeatMode: true },
+            polyline: { shapeOptions: { color: '#ff9800', weight: 3 }, touchExtend: true, repeatMode: true, maxPoints: 1000 },
             polygon: { allowIntersection: false, showArea: true, shapeOptions: { color: '#e91e63', weight: 2, fillOpacity: 0.1 } },
             rectangle: { shapeOptions: { color: '#3f51b5', weight: 2, fillOpacity: 0.1 } },
             circle: false,
             circlemarker: false,
-            marker: { icon: createMarkerIcon('pending'), repeatMode: true }
+            marker: { icon: createMarkerIcon('pending', currentMarkerStyle), repeatMode: true }
           },
           edit: {
             featureGroup: annotationLayer,
@@ -2272,10 +2272,14 @@ function initializeMaps() {
       } catch (e) {
         console.warn('Leaflet.Draw not available');
       }
-      // While drawing, disable map dragging to avoid accidental finish on mobile
-      fullMap.on('draw:drawstart', function() { try { fullMap.dragging.disable(); } catch(_){} });
-      fullMap.on('draw:drawstop', function() { try { fullMap.dragging.enable(); } catch(_){} });
-      fullMap.on('dblclick', function(e){ if (e && e.originalEvent) e.originalEvent.preventDefault(); });
+      // While drawing, disable map gestures to avoid accidental finish on mobile
+      fullMap.on('draw:drawstart', function() { try { fullMap.dragging.disable(); fullMap.boxZoom.disable(); } catch(_){} });
+      fullMap.on('draw:drawstop', function() { try { fullMap.dragging.enable(); fullMap.boxZoom.enable(); } catch(_){} });
+      fullMap.on('dblclick', function(e){ if (e && e.originalEvent) e.originalEvent.preventDefault(); L.DomEvent.stop(e); });
+      const fullMapEl = document.getElementById('fullMap');
+      if (fullMapEl) {
+        fullMapEl.addEventListener('dblclick', function(e){ e.preventDefault(); e.stopPropagation(); }, true);
+      }
 
       // Restore saved annotations
       const saved = loadAnnotations();
@@ -2861,11 +2865,24 @@ document.addEventListener('DOMContentLoaded', function() {
       currentMarkerStyle = currentMarkerStyle === 'cross' ? 'dot' : currentMarkerStyle === 'dot' ? 'circle' : 'cross';
       const label = currentMarkerStyle === 'cross' ? 'Marker: Cross' : currentMarkerStyle === 'dot' ? 'Marker: Dot' : 'Marker: Circle';
       markerStyleBtn.textContent = label;
-      // Update draw control marker icon live if possible
+      // Rebuild draw control so new icon is used
       try {
-        if (drawControl && drawControl.options && drawControl.options.draw) {
-          drawControl.options.draw.marker.icon = createMarkerIcon('pending', currentMarkerStyle);
+        if (drawControl) {
+          fullMap.removeControl(drawControl);
         }
+        drawControl = new L.Control.Draw({
+          position: 'topright',
+          draw: {
+            polyline: { shapeOptions: { color: '#ff9800', weight: 3 }, touchExtend: true, repeatMode: true, maxPoints: 1000 },
+            polygon: { allowIntersection: false, showArea: true, shapeOptions: { color: '#e91e63', weight: 2, fillOpacity: 0.1 } },
+            rectangle: { shapeOptions: { color: '#3f51b5', weight: 2, fillOpacity: 0.1 } },
+            circle: false,
+            circlemarker: false,
+            marker: { icon: createMarkerIcon('pending', currentMarkerStyle), repeatMode: true }
+          },
+          edit: { featureGroup: annotationLayer, remove: true }
+        });
+        fullMap.addControl(drawControl);
       } catch(_) {}
     };
     markerStyleBtn.addEventListener('click', handler);
