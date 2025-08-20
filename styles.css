@@ -1267,12 +1267,13 @@
     .full-map-header {
       background: var(--primary);
       color: white;
-      padding: env(safe-area-inset-top, 0) 20px 16px 20px;
-      display: flex;
+      padding: env(safe-area-inset-top, 0) 12px 12px 12px;
+      display: grid;
+      grid-template-columns: 1fr auto;
       align-items: center;
-      justify-content: space-between;
+      gap: 8px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      min-height: 60px;
+      min-height: 56px;
       flex-shrink: 0;
     }
 
@@ -1286,6 +1287,7 @@
       display: flex;
       gap: 8px;
       align-items: center;
+      flex-wrap: wrap;
     }
 
     .map-btn {
