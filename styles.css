@@ -1267,11 +1267,9 @@
     .full-map-header {
       background: var(--primary);
       color: white;
-      padding: env(safe-area-inset-top, 0) 12px 12px 12px;
-      display: grid;
-      grid-template-columns: 1fr auto;
-      align-items: center;
-      gap: 8px;
+      padding: env(safe-area-inset-top, 0) 8px 8px 8px;
+      display: block;
+      position: relative;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       min-height: 56px;
       flex-shrink: 0;
@@ -1287,7 +1285,10 @@
       display: flex;
       gap: 8px;
       align-items: center;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-right: 56px;
     }
 
     .map-btn {
@@ -1326,9 +1327,11 @@
       display: flex !important;
       align-items: center;
       justify-content: center;
-      z-index: 1001 !important;
+      z-index: 1002 !important;
       pointer-events: auto !important;
-      position: relative;
+      position: absolute;
+      top: 8px;
+      right: 8px;
       flex-shrink: 0;
       min-width: 44px;
       min-height: 44px;
