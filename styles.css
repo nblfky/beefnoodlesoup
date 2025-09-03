@@ -1229,6 +1229,13 @@
       justify-content: center;
     }
 
+    .mini-map.minimized {
+      height: 0;
+      min-height: 0;
+      max-height: 0;
+      overflow: hidden;
+    }
+
     .mini-map::before {
       content: '🗺️ Loading map...';
       position: absolute;

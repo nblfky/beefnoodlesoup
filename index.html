@@ -44,6 +44,7 @@
       <div class="map-header">
         <div class="map-info">
           <span id="mapStatus">📍 Loading location...</span>
+          <button id="toggleMiniMapBtn" class="map-follow-btn" title="Minimize map">▾</button>
           <span id="routeProgress"></span>
         </div>
         <div class="map-header-buttons">
@@ -80,16 +81,15 @@
 
     <div class="card">
       <div class="toolbar">
-        <button id="exportBtn" class="btn">Export CSV</button>
-        <button id="downloadAllPhotosBtn" class="btn">📸 Download All Photos</button>
-        <button id="uploadBtn" class="btn">Upload Image</button>
-        <button id="clearBtn" class="btn">Clear</button>
+        <button id="exportBtn" class="btn">Export</button>
+        <button id="downloadAllPhotosBtn" class="btn">Download</button>
+        <button id="uploadBtn" class="btn">Upload</button>
         <input type="file" id="imageInput" accept="image/*" style="display:none" />
       </div>
       <div class="search-toolbar">
         <input type="text" id="storeSearchInput" placeholder="Search for store name in table..." />
         <button id="searchLocationBtn" class="btn">🔍 Search</button>
-        <button id="photoCaptureToggle" class="btn photo-toggle" title="Toggle photo capture">📸 Photo: ON</button>
+        <button id="clearBtn" class="btn">Clear</button>
       </div>
       <div id="status" class="muted"></div>
       <div class="table-container">

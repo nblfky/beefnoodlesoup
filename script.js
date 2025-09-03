@@ -115,6 +115,25 @@ function scheduleSaveScans() {
   });
 }
 
+// Sanitize helpers: convert placeholders like "Not Found"/"Unknown" to blanks
+function sanitizeString(value) {
+  const v = (value == null ? '' : String(value)).trim();
+  if (!v) return '';
+  const lower = v.toLowerCase();
+  if (lower === 'not found' || lower === 'unknown' || lower === 'n/a') return '';
+  return v;
+}
+
+function sanitizeObjectStrings(obj) {
+  const out = { ...obj };
+  for (const key in out) {
+    if (typeof out[key] === 'string') {
+      out[key] = sanitizeString(out[key]);
+    }
+  }
+  return out;
+}
+
 function openPhotoDB() {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(PHOTO_DB_NAME, 1);
@@ -179,10 +198,10 @@ function migrateScansData() {
       photoData: scan.photoData || null,
       timestamp: scan.timestamp || new Date().toISOString(),
       photoFilename: scan.photoFilename || null,
-      houseNo: scan.houseNo || 'Not Found',
-      street: scan.street || 'Not Found', 
-      building: scan.building || 'Not Found',
-      postcode: scan.postcode || 'Not Found'
+      houseNo: scan.houseNo || '',
+      street: scan.street || '', 
+      building: scan.building || '',
+      postcode: scan.postcode || ''
     };
   });
   saveScans();
@@ -225,10 +244,21 @@ function showScanComplete() {
   }
 } // OneMap API key for authenticated endpoints
 openaiApiKey = localStorage.getItem('openaiApiKey') || '';
-oneMapApiKey = localStorage.getItem('oneMapApiKey') || '';
+// oneMapApiKey removed – switching to Nominatim for reverse geocoding
 try {
   scans = JSON.parse(localStorage.getItem('scans') || '[]');
 } catch (_) { scans = []; }
+
+// Ensure newest-first ordering by timestamp
+function sortScansNewestFirst() {
+  try {
+    scans.sort((a, b) => {
+      const at = Date.parse((a && a.timestamp) ? a.timestamp : 0);
+      const bt = Date.parse((b && b.timestamp) ? b.timestamp : 0);
+      return bt - at;
+    });
+  } catch (_) {}
+}
 
 // Migrate existing data to new structure
 if (scans.length > 0) {
@@ -293,6 +323,9 @@ async function migrateExistingPhotosToIndexedDB() {
 // Kick off migration shortly after load
 setTimeout(() => { migrateExistingPhotosToIndexedDB(); }, 500);
 
+// Sort once on load so newest entries appear first
+sortScansNewestFirst();
+
 renderTable();
 
 function saveScans() {
@@ -323,15 +356,15 @@ function renderTable() {
     const remarksValue = scan.remarks || '';
     
     // Format Lat-Long as a single field
-    const latLong = (scan.lat && scan.lng && scan.lat !== 'Not Found' && scan.lng !== 'Not Found') 
+    const latLong = (scan.lat && scan.lng) 
       ? `${scan.lat}, ${scan.lng}` 
-      : 'Not Found';
+      : '';
     
-    // Parse address components (for now, use placeholders until address parsing is implemented)
-    const houseNo = scan.houseNo || 'Not Found';
-    const street = scan.street || 'Not Found';
-    const building = scan.building || 'Not Found';
-    const postcode = scan.postcode || 'Not Found';
+    // Parse address components
+    const houseNo = scan.houseNo || '';
+    const street = scan.street || '';
+    const building = scan.building || '';
+    const postcode = scan.postcode || '';
     
     // Create photo cell content - ensure it's always a complete cell
     let photoCell;
@@ -686,18 +719,16 @@ document.getElementById('exportBtn').addEventListener('click', () => {
   const csvRows = [headers.join(',')];
   scans.forEach(s => {
     // Format Lat-Long as a single field
-    const latLong = (s.lat && s.lng && s.lat !== 'Not Found' && s.lng !== 'Not Found') 
-      ? `${s.lat}, ${s.lng}` 
-      : 'Not Found';
+    const latLong = (s.lat && s.lng) ? `${s.lat}, ${s.lng}` : '';
     
     const row = [
       s.storeName, 
       latLong,
-      s.houseNo || 'Not Found', 
-      s.street || 'Not Found', 
+      s.houseNo || '', 
+      s.street || '', 
       s.unitNumber, 
-      s.building || 'Not Found', 
-      s.postcode || 'Not Found', 
+      s.building || '', 
+      s.postcode || '', 
       s.remarks || '',
       s.photoData ? 'Yes' : 'No',
       s.timestamp || 'Unknown'
@@ -818,6 +849,8 @@ document.getElementById('downloadAllPhotosBtn').addEventListener('click', async 
     document.getElementById('downloadAllPhotosBtn').disabled = false;
   }
 });
+
+// Removed combined Export All handler
 
 // --- Manual store location search ---
 const storeSearchInput = document.getElementById('storeSearchInput');
@@ -976,169 +1009,37 @@ function getCurrentLocation(initial = false) {
   });
 }
 
-// --- OneMap (Singapore) reverse-geocoding helper ---
-// Note: OneMap's JSON schema has changed over time. Newer responses
-// use a `results` array with camel-/snake-case keys (e.g. `BLK_NO`,
-// `ROAD_NAME`, `POSTAL`). The original version of this file only
-// handled the older `GeocodeInfo` shape, which is why it silently
-// returned "" and the UI showed "Not Found".
-//
-// This implementation now:
-// 1. Accepts either `GeocodeInfo` or `results`.
-// 2. Normalises the field names so we can build a readable address
-//    without having to worry about the exact schema version.
-// 3. Falls back to the `ADDRESS` field when it is already formatted.
+// --- Reverse geocoding via OpenStreetMap Nominatim (Singapore) ---
+// Converts lat/lon to structured address parts using Nominatim and returns
+// an object with { address, houseNo, street, building, postcode }.
 async function reverseGeocode(lat, lng) {
   try {
-    // Newer API version expects separate lat & lon query params (see https://docs.onemap.sg/#revgeocode)
-    const url = `https://developers.onemap.sg/commonapi/revgeocode?lat=${lat}&lon=${lng}&returnGeom=N&getAddrDetails=Y`;
-    const res = await fetchWithTimeout(url, { timeoutMs: REVERSE_TIMEOUT_MS });
+    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=jsonv2&addressdetails=1&namedetails=1&zoom=18`;
+    const headers = { 'Accept': 'application/json' };
+    const res = await fetchWithTimeout(url, { headers, timeoutMs: REVERSE_TIMEOUT_MS });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
 
-    // Handle both possible response shapes
-    const result = (data.GeocodeInfo || data.results || data.ReverseGeocodeInfo)?.[0];
-    if (!result) return '';
+    const a = data.address || {};
+    const houseNo = a.house_number || a.block || '';
+    const street = a.road || a.pedestrian || a.footway || a.path || a.cycleway || a.street || '';
+    const postcode = a.postcode || '';
+    const building = (data.namedetails && data.namedetails.name) || data.name || a.building || '';
 
-    // Normalise keys so we can treat both schemas uniformly
-    const blk   = result.BLOCK      || result.BLK_NO      || result.block      || result.blk_no;
-    const road  = result.ROAD       || result.ROAD_NAME   || result.road       || result.road_name;
-    const bldg  = result.BUILDING   || result.BUILDINGNAME|| result.building   || result.buildingname;
-    const postal= result.POSTAL     || result.POSTALCODE  || result.postal     || result.postalcode;
-    const addr  = result.ADDRESS    || result.address;
+    const parts = [houseNo, street, building, 'SINGAPORE', postcode].filter(Boolean);
+    const fullAddress = data.display_name || parts.join(' ').trim();
 
-    // Prefer a pre-formatted ADDRESS string if provided
-    if (addr) return addr.trim();
-
-    // Otherwise stitch together what we have
-    const parts = [blk, road, bldg, 'SINGAPORE', postal].filter(Boolean);
-    return parts.join(' ').trim();
+    return { address: fullAddress, houseNo, street, building, postcode };
   } catch (err) {
-    console.warn('Reverse geocode failed', err);
-    return '';
+    console.warn('Reverse geocode (Nominatim) failed', err);
+    return { address: '', houseNo: '', street: '', building: '', postcode: '' };
   }
 }
 
 // --- OneMap Search API for finding store locations ---
 // Search for places by name using OneMap's search API
-// Returns the best matching location with coordinates and address
-async function searchStoreLocation(storeName, currentLat = null, currentLng = null) {
-  if (!storeName || storeName === 'Not Found' || storeName === 'Unknown') {
-    return null;
-  }
-
-  try {
-    // Clean up store name for search
-    const cleanStoreName = storeName.replace(/[^\w\s]/g, ' ').trim();
-    if (!cleanStoreName) return null;
-
-    // Use OneMap search API (public endpoint - no key required)
-    const url = `https://developers.onemap.sg/commonapi/search?searchVal=${encodeURIComponent(cleanStoreName)}&returnGeom=Y&getAddrDetails=Y`;
-    const headers = {};
-    
-    // If OneMap API key is available, could use authenticated endpoints for better performance
-    // (Currently using free public endpoints which work fine)
-    if (oneMapApiKey) {
-      console.log('OneMap API key available for future authenticated endpoints');
-    }
-    
-    const res = await fetchWithTimeout(url, { headers, timeoutMs: SEARCH_TIMEOUT_MS });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-
-    // Check if we have results
-    if (!data.results || !Array.isArray(data.results) || data.results.length === 0) {
-      console.log(`No search results found for: ${storeName}`);
-      return null;
-    }
-
-    let bestMatch = data.results[0]; // Default to first result
-
-    // If we have current location, find the closest match
-    if (currentLat && currentLng && data.results.length > 1) {
-      let closestDistance = Infinity;
-      
-      for (const result of data.results) {
-        if (result.LATITUDE && result.LONGITUDE) {
-          const distance = calculateDistance(
-            parseFloat(currentLat),
-            parseFloat(currentLng),
-            parseFloat(result.LATITUDE),
-            parseFloat(result.LONGITUDE)
-          );
-          
-          if (distance < closestDistance) {
-            closestDistance = distance;
-            bestMatch = result;
-          }
-        }
-      }
-    }
-
-    // Debug: Log the raw response to understand the structure
-    console.log('OneMap search response for', storeName, ':', bestMatch);
-
-    // Extract coordinates and address from the best match
-    const lat = bestMatch.LATITUDE || bestMatch.lat;
-    const lng = bestMatch.LONGITUDE || bestMatch.lng;
-    
-    // Try multiple ways to extract address
-    let address = '';
-    
-    // Method 1: Check for pre-formatted address
-    if (bestMatch.ADDRESS) {
-      address = bestMatch.ADDRESS.trim();
-    } else if (bestMatch.address) {
-      address = bestMatch.address.trim();
-    }
-    
-    // Method 2: Build address from components (more reliable)
-    if (!address) {
-      const addressParts = [
-        bestMatch.BLK_NO || bestMatch.BLOCK,
-        bestMatch.ROAD_NAME || bestMatch.ROAD,
-        bestMatch.BUILDING || bestMatch.BUILDINGNAME,
-        bestMatch.POSTAL || bestMatch.POSTALCODE
-      ].filter(Boolean);
-      
-      if (addressParts.length) {
-        address = addressParts.join(' ') + ', SINGAPORE';
-      }
-    }
-    
-    // Method 3: Use the search value as fallback with "Singapore" appended
-    if (!address && bestMatch.SEARCHVAL) {
-      address = bestMatch.SEARCHVAL + ', SINGAPORE';
-    }
-
-    if (!lat || !lng) {
-      console.warn('No coordinates found in search result for', storeName);
-      return null;
-    }
-
-    // Method 4: If still no address, try reverse geocoding the found coordinates
-    if (!address || address === 'Address not found') {
-      console.log(`No address from search, trying reverse geocoding for coordinates: ${lat}, ${lng}`);
-      const reverseGeocodedAddress = await reverseGeocode(lat, lng);
-      if (reverseGeocodedAddress) {
-        address = reverseGeocodedAddress;
-        console.log(`Got address from reverse geocoding: "${address}"`);
-      }
-    }
-
-    console.log(`Final extracted address for ${storeName}: "${address}"`);
-
-    return {
-      lat: parseFloat(lat).toFixed(6),
-      lng: parseFloat(lng).toFixed(6),
-      address: address || 'Address not found'
-    };
-
-  } catch (err) {
-    console.warn(`OneMap search failed for "${storeName}":`, err);
-    return null;
-  }
-}
+// OneMap search removed. Keeping a stub to avoid breaking references.
+async function searchStoreLocation() { return null; }
 
 // Helper function to calculate distance between two coordinates (Haversine formula)
 function calculateDistance(lat1, lng1, lat2, lng2) {
@@ -1177,14 +1078,7 @@ function setOpenAIApiKey(key) {
   }
 }
 
-function setOneMapApiKey(key) {
-  oneMapApiKey = key;
-  if (key) {
-    localStorage.setItem('oneMapApiKey', key);
-  } else {
-    localStorage.removeItem('oneMapApiKey');
-  }
-}
+// OneMap API key handling removed
 
 async function extractInfoGPT(rawText) {
   if (!openaiApiKey) return null;
@@ -1225,18 +1119,7 @@ if (!openaiApiKey) {
   }, 500);
 }
 
-// OneMap API key is optional - the app works fine with public endpoints
-// Uncomment below if you want to be prompted for OneMap API key
-/*
-if (!oneMapApiKey) {
-  setTimeout(() => {
-    if (confirm('Enter your OneMap API key for authenticated endpoints?\n(Optional - app works fine without it)')) {
-      const key = prompt('OneMap API token');
-      if (key) setOneMapApiKey(key.trim());
-    }
-  }, 1000);
-}
-*/
+// OneMap API prompt removed
 
 function correctStoreName(name) {
   if (!name || !englishWords.length || typeof didYouMean !== 'function') return name;
@@ -1267,6 +1150,13 @@ async function initCamera() {
     });
     video.srcObject = stream;
     window.currentCameraStream = stream;
+    try {
+      const track = stream.getVideoTracks && stream.getVideoTracks()[0];
+      if (track) {
+        enableAutofocus(track);
+        initTrackZoom(track);
+      }
+    } catch (_) {}
     // After permission granted, enumerate to find ultra-wide if available
     detectAvailableCameras().catch(()=>{});
   } catch (err) {
@@ -1280,9 +1170,103 @@ initCamera();
 // --- Zoom functionality ---
 const defaultZoom = 1.0;
 let currentZoom = defaultZoom;
-const minZoom = 0.5; // allow zooming out to 0.5x
-const maxZoom = 5.0;
-const zoomStep = 0.2;
+let minZoom = 0.5; // allow zooming out to 0.5x (fallback CSS)
+let maxZoom = 5.0;
+let zoomStep = 0.2;
+// Hysteresis to avoid rapid lens switching around threshold
+const lensSwitchLow = 0.55;  // switch to ultra only below this
+const lensSwitchHigh = 0.65; // switch to wide only above this
+let useTrackZoom = false; // prefer hardware zoom when supported
+let trackCapabilities = null;
+
+// Try to enable continuous autofocus when available
+function enableAutofocus(track) {
+  try {
+    const caps = track.getCapabilities && track.getCapabilities();
+    if (!caps) return;
+    // Some browsers expose focusMode; try continuous or auto
+    const modes = caps.focusMode || caps.focusModes || [];
+    if (Array.isArray(modes)) {
+      if (modes.includes('continuous')) {
+        track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(()=>{});
+      } else if (modes.includes('auto')) {
+        track.applyConstraints({ advanced: [{ focusMode: 'auto' }] }).catch(()=>{});
+      }
+    }
+  } catch (_) {}
+}
+
+// Prefer native camera zoom if supported by the track
+function initTrackZoom(track) {
+  try {
+    const caps = track.getCapabilities && track.getCapabilities();
+    if (caps && typeof caps.zoom === 'object' && typeof caps.zoom.min === 'number') {
+      useTrackZoom = true;
+      trackCapabilities = caps;
+      // Align UI limits with hardware limits
+      minZoom = typeof caps.zoom.min === 'number' ? caps.zoom.min : minZoom;
+      maxZoom = typeof caps.zoom.max === 'number' ? caps.zoom.max : maxZoom;
+      const range = Math.max(0.1, maxZoom - minZoom);
+      zoomStep = Math.max(0.05, range / 20);
+    }
+  } catch (_) {}
+}
+
+// Tap-to-focus (best-effort). Uses pointsOfInterest when available.
+video.addEventListener('click', (e) => {
+  try {
+    const stream = window.currentCameraStream;
+    if (!stream) return;
+    const track = stream.getVideoTracks && stream.getVideoTracks()[0];
+    if (!track || !track.getCapabilities) return;
+    const caps = track.getCapabilities();
+    const rect = video.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
+
+    // Visual focus indicator
+    showFocusRing(e.clientX, e.clientY);
+
+    const advanced = [];
+    if (caps.pointsOfInterest) {
+      advanced.push({ pointsOfInterest: [{ x: Math.min(Math.max(x, 0), 1), y: Math.min(Math.max(y, 0), 1) }] });
+    }
+    const modes = caps.focusMode || [];
+    if (Array.isArray(modes) && modes.includes('single-shot')) {
+      advanced.push({ focusMode: 'single-shot' });
+    }
+    if (advanced.length) {
+      track.applyConstraints({ advanced }).catch(()=>{});
+    }
+  } catch (_) {}
+});
+
+function showFocusRing(clientX, clientY) {
+  try {
+    const ring = document.createElement('div');
+    ring.style.position = 'fixed';
+    ring.style.left = (clientX - 30) + 'px';
+    ring.style.top = (clientY - 30) + 'px';
+    ring.style.width = '60px';
+    ring.style.height = '60px';
+    ring.style.border = '2px solid #00b14f';
+    ring.style.borderRadius = '8px';
+    ring.style.boxShadow = '0 0 8px rgba(0,0,0,0.25)';
+    ring.style.pointerEvents = 'none';
+    ring.style.zIndex = '9999';
+    ring.style.transition = 'opacity 400ms ease, transform 400ms ease';
+    document.body.appendChild(ring);
+    requestAnimationFrame(() => {
+      ring.style.transform = 'scale(0.9)';
+      ring.style.opacity = '0.85';
+    });
+    setTimeout(() => {
+      ring.style.opacity = '0';
+      ring.style.transform = 'scale(1.1)';
+      setTimeout(() => { if (ring.parentNode) ring.parentNode.removeChild(ring); }, 300);
+    }, 500);
+  } catch (_) {}
+}
 
 // Device-based zoom (switching physical lenses when available)
 let cameraDevices = { wide: null, ultra: null };
@@ -1353,22 +1337,33 @@ async function switchToCamera(type) {
 // Zoom state management
 function updateZoomLevel(newZoom) {
   currentZoom = Math.max(minZoom, Math.min(maxZoom, newZoom));
-  
-  // If user requests <= ~0.6x and an ultra-wide lens exists, switch to it
-  if (currentZoom <= 0.6 && currentCameraType !== 'ultra' && cameraDevices.ultra) {
-    switchToCamera('ultra');
-    // Keep CSS at 1 when using hardware ultra-wide; snap display to 0.5x
-    currentZoom = 0.5;
-  } else if (currentZoom > 0.6 && currentCameraType !== 'wide' && cameraDevices.wide) {
-    // Switch back to the wide lens for >0.6x
-    switchToCamera('wide');
-    currentZoom = Math.max(1.0, currentZoom);
-  }
 
-  // Apply CSS zoom only as a visual fallback for micro-adjustments
-  const cssScale = currentCameraType === 'ultra' ? Math.max(1, currentZoom / 0.5) : currentZoom;
-  video.style.transform = `scale(${cssScale})`;
-  video.style.transformOrigin = 'center center';
+  // Prefer hardware zoom when supported
+  const stream = window.currentCameraStream;
+  const track = stream && stream.getVideoTracks ? stream.getVideoTracks()[0] : null;
+  if (isZooming) {
+    // During pinch gesture: avoid hardware constraints and lens switches; use CSS only
+    const cssScale = currentCameraType === 'ultra' ? Math.max(1, currentZoom / 0.5) : currentZoom;
+    video.style.transform = `scale(${cssScale})`;
+    video.style.transformOrigin = 'center center';
+  } else {
+    if (useTrackZoom && track && track.applyConstraints) {
+      track.applyConstraints({ advanced: [{ zoom: currentZoom }] }).catch(()=>{});
+      video.style.transform = 'scale(1)';
+    } else {
+      // Device-based lens switch with hysteresis to prevent flapping
+      if (currentZoom <= lensSwitchLow && currentCameraType !== 'ultra' && cameraDevices.ultra) {
+        switchToCamera('ultra');
+        currentZoom = 0.5;
+      } else if (currentZoom >= lensSwitchHigh && currentCameraType !== 'wide' && cameraDevices.wide) {
+        switchToCamera('wide');
+        currentZoom = Math.max(1.0, currentZoom);
+      }
+      const cssScale = currentCameraType === 'ultra' ? Math.max(1, currentZoom / 0.5) : currentZoom;
+      video.style.transform = `scale(${cssScale})`;
+      video.style.transformOrigin = 'center center';
+    }
+  }
   
   // Update zoom level display
   zoomLevelSpan.textContent = `${currentZoom.toFixed(1)}x`;
@@ -1446,6 +1441,8 @@ video.addEventListener('touchend', (e) => {
   if (e.touches.length < 2) {
     isZooming = false;
     initialDistance = 0;
+    // Commit hardware zoom / lens switch after pinch ends
+    updateZoomLevel(currentZoom);
   }
 }, { passive: false });
 
@@ -1608,34 +1605,16 @@ async function performScanFromCanvas(canvas) {
     parsed.category = await mapToCompanyCategory(parsed.category);
   }
 
-  // Try to search for the store location using OneMap API
-  let storeLocation = null;
-  if (parsed && parsed.storeName && parsed.storeName !== 'Not Found') {
-    showScanningOverlay('Finding location...');
-    statusDiv.textContent = 'Finding store location…';
+  // Reverse geocode based on current device location (Singapore)
+  let finalLat, finalLng, addressParts;
+  finalLat = geo.lat || '';
+  finalLng = geo.lng || '';
+  if (geo.lat && geo.lng) {
     try {
-      storeLocation = await searchStoreLocation(parsed.storeName, geo.lat, geo.lng);
-    } catch (_) { storeLocation = null; }
-  }
-
-  // Use store location if found, otherwise fallback to current device location
-  let finalLat, finalLng, address;
-  if (storeLocation) {
-    finalLat = storeLocation.lat;
-    finalLng = storeLocation.lng;
-    address = storeLocation.address;
-    console.log(`Found store location: ${parsed.storeName} at ${finalLat}, ${finalLng}`);
+      addressParts = await reverseGeocode(geo.lat, geo.lng);
+    } catch (_) { addressParts = { address: '', houseNo: '', street: '', building: '', postcode: '' }; }
   } else {
-    // Fallback to device location and reverse geocode
-    finalLat = geo.lat || 'Not Found';
-    finalLng = geo.lng || 'Not Found';
-    if (geo.lat && geo.lng) {
-      try { address = await reverseGeocode(geo.lat, geo.lng); } catch (_) { address = ''; }
-    }
-    
-    if (!address) {
-      address = parsed.address || 'Not Found';
-    }
+    addressParts = { address: parsed?.address || '', houseNo: '', street: '', building: '', postcode: '' };
   }
 
   // Store photo data with the scan
@@ -1649,18 +1628,22 @@ async function performScanFromCanvas(canvas) {
   }
   const thumbDataUrl = createThumbnailDataURL(canvas, 400, 400, 0.6);
 
-  const info = Object.assign(
+  const info = sanitizeObjectStrings(Object.assign(
     { 
       lat: finalLat, 
       lng: finalLng, 
-      address: address,
+      address: addressParts?.address || parsed?.address || '',
+      houseNo: addressParts?.houseNo || parsed?.houseNo || '',
+      street: addressParts?.street || parsed?.street || '',
+      building: addressParts?.building || parsed?.building || '',
+      postcode: addressParts?.postcode || parsed?.postcode || '',
       photoData: thumbDataUrl,
       timestamp: timestamp,
       photoFilename: photoFilename,
       photoId: photoId
     },
     parsed
-  );
+  ));
 
   // Check for duplicates before adding
   if (isDuplicateStore(info)) {
@@ -1671,7 +1654,10 @@ async function performScanFromCanvas(canvas) {
     return; // Don't add duplicate
   }
 
-  scans.push(info);
+  // Insert newest scan at the top
+  scans.unshift(info);
+  // Keep array sorted by newest-first as a safety net
+  sortScansNewestFirst();
   saveScans();
   renderTable();
   
@@ -2004,16 +1990,16 @@ function extractInfo(rawText, ocrLines = []) {
   }
 
   // Use "Not Found" when a field could not be extracted to match strict rules
-  if (!storeName) storeName = 'Not Found';
-  if (!unitNumber) unitNumber = 'Not Found';
-  if (!openingHours) openingHours = 'Not Found'; // kept for future reference
-  if (!phone) phone = 'Not Found';              // kept for future reference
-  if (!website) website = 'Not Found';          // kept for future reference
+  if (!storeName) storeName = '';
+  if (!unitNumber) unitNumber = '';
+  if (!openingHours) openingHours = ''; // kept for future reference
+  if (!phone) phone = '';              // kept for future reference
+  if (!website) website = '';          // kept for future reference
 
   // Placeholder – address extraction will be implemented later or via geocoding
   let address = '';
 
-  if (!address) address = 'Not Found';
+  if (!address) address = '';
 
   return {
     storeName,
@@ -2359,88 +2345,39 @@ function initializeMaps() {
     addMapInteractionHandlers();
   }, 500);
 }
+// Minimize/expand mini map
+const toggleMiniMapBtn = document.getElementById('toggleMiniMapBtn');
+if (toggleMiniMapBtn) {
+  toggleMiniMapBtn.addEventListener('click', () => {
+    const miniMapEl = document.getElementById('miniMap');
+    if (!miniMapEl) return;
+    const minimized = miniMapEl.classList.toggle('minimized');
+    toggleMiniMapBtn.textContent = minimized ? '▸' : '▾';
+  });
+}
 
 // Add tile layers with multiple fallback sources
 function addTileLayersToMap(map) {
-  // Primary: OneMap Singapore (most accurate for Singapore)
-  const oneMapLayer = L.tileLayer('https://maps-{s}.onemap.sg/v3/Default/{z}/{x}/{y}.png', {
-    subdomains: ['a', 'b', 'c', 'd'],
-    attribution: '&copy; <a href="https://www.onemap.sg/">OneMap</a>',
-    maxZoom: 18,
+  // Use OpenStreetMap directly
+  const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors',
+    maxZoom: 19,
     errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
   });
-
-  // Fallback 1: OpenStreetMap (reliable worldwide)
-  const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    maxZoom: 19
-  });
-
-  // Fallback 2: CartoDB (clean, reliable)
-  const cartoLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-    maxZoom: 19
-  });
-
-  // Try OneMap first, fallback to OSM if it fails
-  let currentLayer = oneMapLayer;
-  currentLayer.addTo(map);
+  osmLayer.addTo(map);
 
   // Mark map as loaded when tiles load successfully
-  currentLayer.on('load', function() {
-    console.log('Map tiles loaded successfully');
+  osmLayer.on('load', function() {
     const mapContainer = map.getContainer();
     if (mapContainer) {
       mapContainer.classList.add('loaded');
     }
   });
 
-  // Handle tile load errors
-  currentLayer.on('tileerror', function(error) {
-    console.log('OneMap tiles failed, switching to OpenStreetMap');
-    map.removeLayer(currentLayer);
-    currentLayer = osmLayer;
-    currentLayer.addTo(map);
-    
-    // Mark as loaded when fallback works
-    currentLayer.on('load', function() {
-      console.log('OpenStreetMap tiles loaded successfully');
-      const mapContainer = map.getContainer();
-      if (mapContainer) {
-        mapContainer.classList.add('loaded');
-      }
-    });
-    
-    // If OSM also fails, try CartoDB
-    currentLayer.on('tileerror', function(error) {
-      console.log('OpenStreetMap tiles failed, switching to CartoDB');
-      map.removeLayer(currentLayer);
-      currentLayer = cartoLayer;
-      currentLayer.addTo(map);
-      
-      // Mark as loaded when final fallback works
-      currentLayer.on('load', function() {
-        console.log('CartoDB tiles loaded successfully');
-        const mapContainer = map.getContainer();
-        if (mapContainer) {
-          mapContainer.classList.add('loaded');
-        }
-      });
-    });
-  });
-
-  // Force map to refresh and invalidate size multiple times
-  setTimeout(() => {
-    map.invalidateSize();
-  }, 100);
-  
-  setTimeout(() => {
-    map.invalidateSize();
-  }, 500);
-  
-  setTimeout(() => {
-    map.invalidateSize();
-  }, 1000);
+  // Force map to refresh and invalidate size
+  setTimeout(() => { map.invalidateSize(); }, 100);
+  setTimeout(() => { map.invalidateSize(); }, 500);
+  setTimeout(() => { map.invalidateSize(); }, 1000);
 }
 
 // Update user location on both maps with smooth tracking
@@ -2794,35 +2731,7 @@ document.addEventListener('DOMContentLoaded', function() {
     console.error('Map close button or overlay not found:', { mapCloseBtn, fullMapOverlay });
   }
 
-  // Photo capture toggle functionality
-  const photoCaptureToggle = document.getElementById('photoCaptureToggle');
-  if (photoCaptureToggle) {
-    // Initialize toggle state
-    const updateToggleButton = () => {
-      const isEnabled = localStorage.getItem('photoCaptureEnabled') !== 'false';
-      photoCaptureToggle.textContent = isEnabled ? '📸 Photo: ON' : '📸 Photo: OFF';
-      photoCaptureToggle.classList.toggle('disabled', !isEnabled);
-      photoCaptureToggle.title = isEnabled ? 'Click to disable photo capture' : 'Click to enable photo capture';
-    };
-    
-    // Set initial state
-    updateToggleButton();
-    
-    // Toggle functionality
-    photoCaptureToggle.addEventListener('click', () => {
-      const currentState = localStorage.getItem('photoCaptureEnabled') !== 'false';
-      const newState = !currentState;
-      
-      localStorage.setItem('photoCaptureEnabled', newState.toString());
-      updateToggleButton();
-      
-      // Show feedback
-      const message = newState ? '📸 Photo capture enabled' : '📸 Photo capture disabled';
-      showPhotoSavedNotification(message);
-      
-      console.log(`Photo capture ${newState ? 'enabled' : 'disabled'}`);
-    });
-  }
+  // Photo capture toggle removed
 
   // Add backup close methods
   if (fullMapOverlay) {
