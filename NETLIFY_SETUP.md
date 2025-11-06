@@ -77,4 +77,3 @@ Run `netlify secrets:set OPENAI_API_KEY <new-key>` and redeploy. No frontend cha
 
 With this setup the OpenAI key stays on the server, and your GitHub-hosted repository contains only the static assets plus the Netlify function code.
 
-
