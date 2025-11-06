@@ -11,109 +11,174 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <header>
-    <img src="grab_logo.png" alt="Grab logo">
-    <span>bnsVision</span>
-  </header>
-  <main>
-    <div class="video-wrapper">
-      <video id="camera" autoplay playsinline></video>
-      <div id="progressBar"><div id="progressFill"></div></div>
-      <button id="scanBtn" class="scan-btn">Scan</button>
-      
-      <!-- Zoom Controls -->
-      <div class="zoom-controls">
-        <button id="zoomOut" class="zoom-btn" title="Zoom Out">−</button>
-        <div class="zoom-indicator">
-          <span id="zoomLevel">1.0x</span>
-        </div>
-        <button id="zoomIn" class="zoom-btn" title="Zoom In">+</button>
-        <button id="zoomReset" class="zoom-reset-btn" title="Reset Zoom">⌂</button>
-      </div>
-      
-      <div id="scanningOverlay" class="scanning-overlay">
-        <div class="scanning-content">
-          <div class="spinner"></div>
-          <div class="scanning-text">Scanning...</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Collapsible Map Section -->
-    <div id="mapContainer" class="map-container">
-      <div class="map-header">
-        <div class="map-info">
-          <span id="mapStatus">📍 Loading location...</span>
-          <button id="toggleMiniMapBtn" class="map-follow-btn" title="Minimize map">▾</button>
-          <span id="routeProgress"></span>
-        </div>
-        <div class="map-header-buttons">
-          <button id="followLocationBtn" class="map-follow-btn" title="Follow Location">🎯</button>
-          <button id="requestLocationBtn" class="map-location-btn" title="Request Location" style="display:none;">📍</button>
-          <button id="mapExpandBtn" class="map-expand-btn" title="Expand Map">⛶</button>
-        </div>
-      </div>
-      <div id="miniMap" class="mini-map"></div>
-      
-      <!-- Full Screen Map Overlay -->
-      <div id="fullMapOverlay" class="full-map-overlay hidden">
-        <div class="full-map-header">
-          <h3>Route Planning</h3>
-          <div class="map-controls">
-            <button id="centerOnUserBtn" class="map-btn">📍 My Location</button>
-            <button id="clearRouteBtn" class="map-btn">Clear Route</button>
-            <button id="addRoutePointModeBtn" class="map-btn">Add Point</button>
-            <button id="markerStyleBtn" class="map-btn" title="Cycle marker style">Marker: Cross</button>
-            <button id="optimizeRouteBtn" class="map-btn">Optimize</button>
-          </div>
-          <button id="mapCloseBtn" class="map-close-btn">×</button>
-        </div>
-        <div id="fullMap" class="full-map"></div>
-        <div class="map-footer">
-          <div class="route-stats">
-            <span id="routeDistance">Distance: 0 km</span>
-            <span id="routeTime">Time: 0 min</span>
-            <span id="routePoints">Points: 0</span>
+  <div id="appShell">
+    <!-- Home Screen -->
+    <section id="homeScreen" class="screen active">
+      <div class="home-hero">
+        <div class="home-logo">
+          <img src="grab_logo.png" alt="bns logo">
+          <div class="home-brand">
+            <span class="brand-kicker">bns</span>
+            <span class="brand-title">Vision Suite</span>
           </div>
         </div>
+        <p class="home-tagline">Intelligent tools for map operations.</p>
       </div>
-    </div>
+      <div class="home-options">
+        <button id="visionEntry" class="home-option primary">
+          <span class="option-title">Vision</span>
+          <span class="option-subtitle">Scan storefronts & capture data</span>
+        </button>
+        <button id="vanguardOption" class="home-option disabled" aria-disabled="true">
+          <span class="option-title">Vanguard</span>
+          <span class="option-subtitle">News intelligence • Coming soon</span>
+        </button>
+      </div>
+    </section>
 
-    <div class="card">
-      <div class="toolbar">
-        <button id="exportBtn" class="btn">Export</button>
-        <button id="downloadAllPhotosBtn" class="btn">Download</button>
-        <button id="uploadBtn" class="btn">Upload</button>
-        <input type="file" id="imageInput" accept="image/*" style="display:none" />
+    <!-- Vision Menu Screen -->
+    <section id="visionMenu" class="screen">
+      <div class="vision-menu-header">
+        <button id="homeBackBtn" class="icon-btn" title="Back to home">⟵</button>
+        <div class="vision-menu-title">
+          <span class="eyebrow">bns</span>
+          <h1>Vision</h1>
+          <p class="vision-menu-tagline">Choose where to begin.</p>
+        </div>
       </div>
-      <div class="search-toolbar">
-        <input type="text" id="storeSearchInput" placeholder="Search for store name in table..." />
-        <button id="searchLocationBtn" class="btn">🔍 Search</button>
-        <button id="clearBtn" class="btn">Clear</button>
+      <div class="vision-menu-grid">
+        <button class="vision-menu-tile" data-vision-target="camera">
+          <div class="tile-icon">📷</div>
+          <span>Camera</span>
+        </button>
+        <button class="vision-menu-tile" data-vision-target="data">
+          <div class="tile-icon">📊</div>
+          <span>Data</span>
+        </button>
+        <button class="vision-menu-tile" data-vision-target="map">
+          <div class="tile-icon">🗺️</div>
+          <span>Map</span>
+        </button>
       </div>
-      <div id="status" class="muted"></div>
-      <div class="table-container">
-        <table id="resultsTable">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Photo</th>
-              <th>POI Name</th>
-              <th>Lat-Long</th>
-              <th>House_No</th>
-              <th>Street</th>
-              <th>Unit</th>
-              <th>Building</th>
-              <th>Postcode</th>
-              <th>Remarks</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
+    </section>
+
+    <!-- Vision App Screen -->
+    <main id="visionApp" class="screen">
+      <div class="vision-app">
+        <div class="vision-topbar">
+          <button id="visionMenuBackBtn" class="icon-btn" title="Back">⟵</button>
+          <div class="vision-tabs">
+            <button class="vision-tab active" data-view="camera">Camera</button>
+            <button class="vision-tab" data-view="data">Data</button>
+            <button class="vision-tab" data-view="map">Map</button>
+          </div>
+        </div>
+
+        <section id="cameraView" class="vision-view active" data-view="camera">
+          <div class="video-wrapper">
+            <video id="camera" autoplay playsinline></video>
+            <div id="progressBar"><div id="progressFill"></div></div>
+            <button id="scanBtn" class="scan-btn">Scan</button>
+
+            <!-- Zoom Controls -->
+            <div class="zoom-controls">
+              <button id="zoomOut" class="zoom-btn" title="Zoom Out">−</button>
+              <div class="zoom-indicator">
+                <span id="zoomLevel">1.0x</span>
+              </div>
+              <button id="zoomIn" class="zoom-btn" title="Zoom In">+</button>
+              <button id="zoomReset" class="zoom-reset-btn" title="Reset Zoom">⌂</button>
+            </div>
+
+            <div id="scanningOverlay" class="scanning-overlay">
+              <div class="scanning-content">
+                <div class="spinner"></div>
+                <div class="scanning-text">Scanning...</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="dataView" class="vision-view" data-view="data">
+          <div class="card">
+            <div class="toolbar">
+              <button id="exportBtn" class="btn">Export</button>
+              <button id="downloadAllPhotosBtn" class="btn">Download</button>
+              <button id="uploadBtn" class="btn">Upload</button>
+              <input type="file" id="imageInput" accept="image/*" style="display:none" />
+            </div>
+            <div class="search-toolbar">
+              <input type="text" id="storeSearchInput" placeholder="Search for store name in table..." />
+              <button id="searchLocationBtn" class="btn">🔍 Search</button>
+              <button id="clearBtn" class="btn">Clear</button>
+            </div>
+            <div id="status" class="muted"></div>
+            <div class="table-container">
+              <table id="resultsTable">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Photo</th>
+                    <th>POI Name</th>
+                    <th>Lat-Long</th>
+                    <th>House_No</th>
+                    <th>Street</th>
+                    <th>Unit</th>
+                    <th>Building</th>
+                    <th>Postcode</th>
+                    <th>Remarks</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section id="mapView" class="vision-view" data-view="map">
+          <div id="mapContainer" class="map-container">
+            <div class="map-header">
+              <div class="map-info">
+                <span id="mapStatus">📍 Loading location...</span>
+                <button id="toggleMiniMapBtn" class="map-follow-btn" title="Minimize map">▾</button>
+                <span id="routeProgress"></span>
+              </div>
+              <div class="map-header-buttons">
+                <button id="followLocationBtn" class="map-follow-btn" title="Follow Location">🎯</button>
+                <button id="requestLocationBtn" class="map-location-btn" title="Request Location" style="display:none;">📍</button>
+                <button id="mapExpandBtn" class="map-expand-btn" title="Expand Map">⛶</button>
+              </div>
+            </div>
+            <div id="miniMap" class="mini-map"></div>
+
+            <!-- Full Screen Map Overlay -->
+            <div id="fullMapOverlay" class="full-map-overlay hidden">
+              <div class="full-map-header">
+                <h3>Route Planning</h3>
+                <div class="map-controls">
+                  <button id="centerOnUserBtn" class="map-btn">📍 My Location</button>
+                  <button id="clearRouteBtn" class="map-btn">Clear Route</button>
+                  <button id="addRoutePointModeBtn" class="map-btn">Add Point</button>
+                  <button id="markerStyleBtn" class="map-btn" title="Cycle marker style">Marker: Cross</button>
+                  <button id="optimizeRouteBtn" class="map-btn">Optimize</button>
+                </div>
+                <button id="mapCloseBtn" class="map-close-btn">×</button>
+              </div>
+              <div id="fullMap" class="full-map"></div>
+              <div class="map-footer">
+                <div class="route-stats">
+                  <span id="routeDistance">Distance: 0 km</span>
+                  <span id="routeTime">Time: 0 min</span>
+                  <span id="routePoints">Points: 0</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
-    </div>
-  </main>
+    </main>
+  </div>
 
   <!-- Leaflet.js for Maps -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />

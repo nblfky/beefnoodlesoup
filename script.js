@@ -40,6 +40,85 @@ async function callOpenAIProxy(endpoint, payload) {
   return res.text();
 }
 
+const screens = {
+  home: document.getElementById('homeScreen'),
+  visionMenu: document.getElementById('visionMenu'),
+  visionApp: document.getElementById('visionApp')
+};
+
+const visionEntryBtn = document.getElementById('visionEntry');
+const homeBackBtn = document.getElementById('homeBackBtn');
+const visionMenuBackBtn = document.getElementById('visionMenuBackBtn');
+const visionMenuTiles = document.querySelectorAll('[data-vision-target]');
+const visionTabButtons = document.querySelectorAll('.vision-tab');
+const visionViews = document.querySelectorAll('.vision-view');
+
+function setActiveScreen(targetScreen) {
+  Object.values(screens).forEach(section => {
+    if (section) section.classList.remove('active');
+  });
+  if (targetScreen) {
+    targetScreen.classList.add('active');
+  }
+}
+
+function setVisionView(targetView = 'camera') {
+  const viewName = targetView || 'camera';
+  visionTabButtons.forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.view === viewName);
+  });
+  visionViews.forEach(section => {
+    section.classList.toggle('active', section.dataset.view === viewName);
+  });
+
+  if (viewName === 'map') {
+    setTimeout(() => {
+      if (typeof miniMap !== 'undefined' && miniMap) {
+        miniMap.invalidateSize();
+      }
+      if (typeof fullMap !== 'undefined' && fullMap) {
+        fullMap.invalidateSize();
+      }
+    }, 180);
+  }
+}
+
+if (visionEntryBtn) {
+  visionEntryBtn.addEventListener('click', () => {
+    setActiveScreen(screens.visionMenu);
+  });
+}
+
+if (homeBackBtn) {
+  homeBackBtn.addEventListener('click', () => {
+    setActiveScreen(screens.home);
+  });
+}
+
+if (visionMenuBackBtn) {
+  visionMenuBackBtn.addEventListener('click', () => {
+    setActiveScreen(screens.visionMenu);
+    setVisionView('camera');
+  });
+}
+
+visionMenuTiles.forEach(tile => {
+  tile.addEventListener('click', () => {
+    const target = tile.dataset.visionTarget || 'camera';
+    setActiveScreen(screens.visionApp);
+    setVisionView(target);
+  });
+});
+
+visionTabButtons.forEach(tab => {
+  tab.addEventListener('click', () => {
+    setVisionView(tab.dataset.view);
+  });
+});
+
+setActiveScreen(screens.home);
+setVisionView('camera');
+
 // Analyse an image with GPT-4o Vision style prompt. Accepts a question and a data-URL or remote image URL.
 async function askImageQuestion(question, imageUrl) {
   if (!hasOpenAIProxy()) return null;
