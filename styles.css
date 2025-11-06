@@ -25,7 +25,7 @@
   body {
     margin: 0;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    background: radial-gradient(circle at top, rgba(33, 59, 103, 0.55), rgba(11, 18, 32, 0.95));
+    background: #0b1220;
     color: var(--text);
     min-height: 100vh;
     display: flex;
@@ -40,27 +40,30 @@
     width: 100%;
     max-width: 420px;
     min-height: 100vh;
-    padding: clamp(16px, 4vw, 24px);
+    padding: clamp(20px, 5vw, 32px);
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 20px;
+    background:
+      radial-gradient(circle at 10% -10%, rgba(58, 94, 143, 0.35), transparent 55%),
+      radial-gradient(circle at 90% 0%, rgba(34, 112, 112, 0.22), transparent 65%),
+      rgba(8, 13, 23, 0.94);
+    box-shadow: 0 32px 80px rgba(3, 6, 12, 0.65);
   }
 
   .screen {
     display: none;
     flex: 1;
     flex-direction: column;
-    background: rgba(10, 16, 29, 0.55);
+    background: transparent;
     border-radius: var(--border-radius-large);
-    border: 1px solid var(--border);
-    box-shadow: var(--shadow);
-    padding: clamp(20px, 5vw, 28px);
-    backdrop-filter: blur(24px);
+    padding: 0;
   }
 
   .screen.active {
     display: flex;
   }
+
 
   .home-hero {
     display: flex;
@@ -68,7 +71,7 @@
     align-items: center;
     text-align: center;
     gap: 18px;
-    margin-top: 32px;
+    margin-top: 20px;
   }
 
   .home-logo {
@@ -77,8 +80,9 @@
     gap: 14px;
     padding: 14px 18px;
     border-radius: 20px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 18px 45px rgba(18, 70, 67, 0.35);
   }
 
   .home-logo img {
@@ -116,7 +120,7 @@
   }
 
   .home-options {
-    margin-top: auto;
+    margin-top: 28px;
     display: flex;
     flex-direction: column;
     gap: 18px;
@@ -127,7 +131,7 @@
     border: none;
     border-radius: var(--border-radius);
     padding: 20px;
-    text-align: left;
+    text-align: center;
     background: rgba(255, 255, 255, 0.03);
     color: var(--text);
     display: flex;
@@ -161,6 +165,37 @@
   }
 
   .option-subtitle {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .home-footer {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-top: 24px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .link-btn {
+    background: none;
+    border: none;
+    color: var(--primary-light);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 4px;
+  }
+
+  .link-btn:hover {
+    color: var(--primary);
+  }
+
+  .version-label {
     font-size: 13px;
     color: var(--text-secondary);
   }

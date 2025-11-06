@@ -53,6 +53,11 @@ const visionMenuTiles = document.querySelectorAll('[data-vision-target]');
 const visionTabButtons = document.querySelectorAll('.vision-tab');
 const visionViews = document.querySelectorAll('.vision-view');
 
+let cameraInitialized = false;
+let cameraInitPromise = null;
+let locationInitialized = false;
+let locationInitPromise = null;
+
 function setActiveScreen(targetScreen) {
   Object.values(screens).forEach(section => {
     if (section) section.classList.remove('active');
@@ -70,6 +75,14 @@ function setVisionView(targetView = 'camera') {
   visionViews.forEach(section => {
     section.classList.toggle('active', section.dataset.view === viewName);
   });
+
+  if (viewName === 'camera') {
+    ensureCameraReady();
+  }
+
+  if (viewName === 'map') {
+    ensureLocationReady();
+  }
 
   if (viewName === 'map') {
     setTimeout(() => {
@@ -115,6 +128,29 @@ visionTabButtons.forEach(tab => {
     setVisionView(tab.dataset.view);
   });
 });
+
+function ensureCameraReady() {
+  if (cameraInitialized) return cameraInitPromise || Promise.resolve();
+  if (cameraInitPromise) return cameraInitPromise;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    statusDiv.textContent = 'Camera not supported on this device.';
+    return Promise.resolve();
+  }
+  cameraInitPromise = initCamera().finally(() => {
+    cameraInitPromise = null;
+  });
+  return cameraInitPromise;
+}
+
+function ensureLocationReady() {
+  if (locationInitialized) return locationInitPromise || Promise.resolve();
+  if (locationInitPromise) return locationInitPromise;
+  locationInitPromise = requestLocationPermission().finally(() => {
+    locationInitialized = true;
+    locationInitPromise = null;
+  });
+  return locationInitPromise;
+}
 
 setActiveScreen(screens.home);
 setVisionView('camera');
@@ -1092,10 +1128,8 @@ async function initLocation() {
   } else {
     statusDiv.textContent = '';
   }
+  locationInitialized = true;
 }
-
-// call immediately
-initLocation();
 
 function getCurrentLocation(initial = false) {
   return new Promise(resolve => {
@@ -1225,6 +1259,7 @@ async function initCamera() {
     });
     video.srcObject = stream;
     window.currentCameraStream = stream;
+    cameraInitialized = true;
     try {
       const track = stream.getVideoTracks && stream.getVideoTracks()[0];
       if (track) {
@@ -1237,10 +1272,9 @@ async function initCamera() {
   } catch (err) {
     console.error(err);
     statusDiv.textContent = 'Camera access denied: ' + err.message;
+    cameraInitialized = false;
   }
 }
-
-initCamera();
 
 // --- Zoom functionality ---
 const defaultZoom = 1.0;
@@ -2934,8 +2968,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // iOS Safari location fix - request permission first
-  requestLocationPermission();
 });
 
 // Request location permission and handle iOS Safari issues
@@ -3249,4 +3281,18 @@ function createMarkerIcon(status = 'pending', style = currentMarkerStyle) {
   if (style === 'dot') html = '<div class="dot-marker"></div>';
   if (style === 'circle') html = '<div class="circle-marker"></div>';
   return L.divIcon({ className: `scan-status-marker ${status}`, html, iconSize: [18,18], iconAnchor: [9,9] });
+}
+
+const versionHistoryBtn = document.getElementById('versionHistoryBtn');
+const appVersionLabel = document.getElementById('appVersion');
+const APP_VERSION = '1.0.0';
+
+if (appVersionLabel) {
+  appVersionLabel.textContent = APP_VERSION;
+}
+
+if (versionHistoryBtn) {
+  versionHistoryBtn.addEventListener('click', () => {
+    alert('Version history coming soon. Current version: ' + APP_VERSION);
+  });
 }
