@@ -8,36 +8,578 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="bnsVision">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <!-- Splash Screen -->
+  <div id="splashScreen" class="splash-screen active">
+    <div class="splash-content">
+      <img src="bns_logo.png" alt="beefnoodlesoup logo" class="splash-logo">
+      <div class="splash-brand">beefnoodlesoup</div>
+    </div>
+  </div>
+
   <div id="appShell">
     <!-- Home Screen -->
-    <section id="homeScreen" class="screen active">
+    <section id="homeScreen" class="screen">
       <div class="home-hero">
         <div class="home-logo">
-          <img src="grab_logo.png" alt="bns logo">
-          <div class="home-brand">
-            <span class="brand-kicker">bns</span>
-            <span class="brand-title">Vision Suite</span>
-          </div>
+          <img src="bns_logo.png" alt="beefnoodlesoup logo">
         </div>
-        <p class="home-tagline">Intelligent tools for map operations.</p>
+        <div class="home-brand">beefnoodlesoup</div>
+        <p class="home-tagline">where every idea finds its broth</p>
       </div>
       <div class="home-options">
         <button id="visionEntry" class="home-option primary">
           <span class="option-title">Vision</span>
-          <span class="option-subtitle">Scan storefronts & capture data</span>
+          <span class="option-subtitle">stirring data into discovery</span>
         </button>
         <button id="vanguardOption" class="home-option disabled" aria-disabled="true">
           <span class="option-title">Vanguard</span>
-          <span class="option-subtitle">News intelligence • Coming soon</span>
+          <span class="option-subtitle">Coming soon...</span>
         </button>
       </div>
       <footer class="home-footer">
         <button id="versionHistoryBtn" class="link-btn" type="button">Version history</button>
-        <span class="version-label">Version: <span id="appVersion">1.0.0</span></span>
+        <span class="version-label">Version: <span id="appVersion">2.0.0</span></span>
       </footer>
+    </section>
+
+    <!-- Version History Screen -->
+    <section id="versionHistoryScreen" class="screen">
+      <div class="vision-app">
+        <div class="vision-topbar">
+          <button id="versionHistoryBackBtn" class="icon-btn" title="Back">⟵</button>
+          <h2 class="view-title">Version History</h2>
+        </div>
+        <section class="vision-view active">
+          <div class="version-history-content">
+            
+            <div class="version-block">
+              <div class="version-header">
+                <h3>2.0.0 — Meatmen Revamp</h3>
+                <span class="version-badge current">Current</span>
+              </div>
+              <div class="version-section">
+                <h4>Major Changes</h4>
+                <ul>
+                  <li>OpenAI API key is now stored in Netlify Secrets, removing the need for users to input it manually (temporary solution until Grab DB integration).</li>
+                  <li>Complete UI overhaul with modern, mobile-friendly, user-first design.</li>
+                  <li>Added batch upload: process multiple images at once with AI; all results saved to the table.</li>
+                  <li>Enhanced scanning flow with status display and banner notifications including previews.</li>
+                </ul>
+              </div>
+              <div class="version-section">
+                <h4>Additional Features</h4>
+                <ul>
+                  <li>Added User Guide page.</li>
+                  <li>Added Version History page.</li>
+                  <li>Added new feature coming soon, "Vanguard".</li>
+                </ul>
+              </div>
+              <div class="version-section">
+                <h4>Fixes & Improvements</h4>
+                <ul>
+                  <li>Various bug fixes, adjustments, and performance improvements.</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="version-block">
+              <div class="version-header">
+                <h3>1.4.0 — Roadshow Edition</h3>
+              </div>
+              <p class="version-description">A special edition created for the Consumer Map Roadshow Event (treasure hunt game).</p>
+              <div class="version-section">
+                <h4>New Features</h4>
+                <ul>
+                  <li>Added Treasure/Navigation Map for players.</li>
+                  <li>Introduced 5 riddle-based placeholders for locating store posters.</li>
+                  <li>Players unlock clues one at a time; collecting all five reveals a final secret riddle.</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="version-block">
+              <div class="version-header">
+                <h3>1.3.0</h3>
+              </div>
+              <div class="version-section">
+                <h4>New Features</h4>
+                <ul>
+                  <li>Added multi-language detection.</li>
+                </ul>
+              </div>
+              <div class="version-section">
+                <h4>Improvements & Fixes</h4>
+                <ul>
+                  <li>Additional UI/UX enhancements.</li>
+                  <li>Other stability fixes and performance improvements.</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="version-block">
+              <div class="version-header">
+                <h3>1.2.0</h3>
+              </div>
+              <div class="version-section">
+                <h4>New Features</h4>
+                <ul>
+                  <li>Added address conversion using OSM Nominatim.</li>
+                  <li>Enabled autofocus camera.</li>
+                  <li>Added new mapping tools.</li>
+                </ul>
+              </div>
+              <div class="version-section">
+                <h4>Improvements & Fixes</h4>
+                <ul>
+                  <li>Improved minimap with minimization option.</li>
+                  <li>Replaced "Not Found" text with empty placeholders.</li>
+                  <li>Table entries now sort by latest entry first.</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="version-block">
+              <div class="version-header">
+                <h3>1.1.0</h3>
+              </div>
+              <div class="version-section">
+                <h4>New Features</h4>
+                <ul>
+                  <li>Added 0.5× zoom-out function.</li>
+                  <li>Integrated OpenStreetMap (OSM).</li>
+                  <li>Enabled image capturing.</li>
+                </ul>
+              </div>
+              <div class="version-section">
+                <h4>Improvements & Fixes</h4>
+                <ul>
+                  <li>Fixed performance throttling occurring around the 10th entry (now supports up to ~100 entries).</li>
+                  <li>UI enhancements across the app.</li>
+                  <li>Removed share-sheet pop-up.</li>
+                  <li>Fixed issue where "Location Not Found" would stall the app.</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="version-block">
+              <div class="version-header">
+                <h3>1.0.0</h3>
+              </div>
+              <div class="version-section">
+                <h4>New Features</h4>
+                <ul>
+                  <li>Introduced the web scanner app powered by GPT-4o Vision.</li>
+                  <li>Added camera functionality to scan store fronts.</li>
+                  <li>Integrated location services to capture latitude/longitude.</li>
+                  <li>Implemented initial API key prompt on startup.</li>
+                  <li>Added zoom-in function.</li>
+                  <li>Store category auto-filled by AI (best-guess classification).</li>
+                </ul>
+              </div>
+            </div>
+
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <!-- Guide Screen -->
+    <section id="guideScreen" class="screen">
+      <div class="vision-app">
+        <div class="vision-topbar">
+          <button id="guideBackBtn" class="icon-btn" title="Back">⟵</button>
+          <h2 class="view-title">User Guide</h2>
+        </div>
+        <section class="vision-view active">
+          <div class="guide-content">
+            
+            <!-- Scanner Guide -->
+            <div class="guide-section">
+              <div class="guide-header">
+                <span class="guide-icon">📷</span>
+                <h3>Scanner (Start Scanning)</h3>
+              </div>
+              <p class="guide-intro">Use AI-powered scanning to extract storefront information from photos.</p>
+              
+              <div class="guide-steps">
+                <div class="guide-step">
+                  <div class="step-number">1</div>
+                  <div class="step-content">
+                    <h4>Grant Camera Access</h4>
+                    <p>When you tap "Start Scanning", your browser will request camera permission. Tap "Allow" to enable the camera.</p>
+                  </div>
+                </div>
+                
+                <div class="guide-step">
+                  <div class="step-number">2</div>
+                  <div class="step-content">
+                    <h4>Position & Focus</h4>
+                    <p>Point your camera at the storefront. Use the zoom controls (+ / −) to adjust the view. The camera will autofocus on the storefront signage.</p>
+                  </div>
+                </div>
+                
+                <div class="guide-step">
+                  <div class="step-number">3</div>
+                  <div class="step-content">
+                    <h4>Scan the Storefront</h4>
+                    <p>Tap the "Scan" button. The app will capture the image and use GPT-4o Vision to extract: store name, address, unit number, building name, postcode, and category.</p>
+                  </div>
+                </div>
+                
+                <div class="guide-step">
+                  <div class="step-number">4</div>
+                  <div class="step-content">
+                    <h4>Review Results</h4>
+                    <p>After scanning, a banner notification will appear showing a preview. Tap the banner to view the full entry in Records, or it will auto-dismiss after 5 seconds.</p>
+                  </div>
+                </div>
+                
+                <div class="guide-step">
+                  <div class="step-number">5</div>
+                  <div class="step-content">
+                    <h4>View in Records</h4>
+                    <p>Navigate to Records to see all scanned entries in a table format. Each entry includes a thumbnail photo and all extracted data.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Records Guide -->
+            <div class="guide-section">
+              <div class="guide-header">
+                <span class="guide-icon">📋</span>
+                <h3>Records Management</h3>
+              </div>
+              <p class="guide-intro">Manage, edit, and export your scanned storefront data.</p>
+              
+              <div class="guide-steps">
+                <div class="guide-step">
+                  <div class="step-number">1</div>
+                  <div class="step-content">
+                    <h4>View Records Table</h4>
+                    <p>All scanned entries appear in the Records table, sorted by most recent first. Scroll horizontally to view all columns.</p>
+                  </div>
+                </div>
+                
+                <div class="guide-step">
+                  <div class="step-number">2</div>
+                  <div class="step-content">
+                    <h4>Search Entries</h4>
+                    <p>Use the search bar to filter entries by store name. Type the name and tap "Search" to find specific records quickly.</p>
+                  </div>
+                </div>
+                
+                <div class="guide-step">
+                  <div class="step-number">3</div>
+                  <div class="step-content">
+                    <h4>Edit an Entry</h4>
+                    <p>Tap the "Edit" button (✏️) on any row to open the edit modal. Modify any field, then tap "Save" to update the record.</p>
+                  </div>
+                </div>
+                
+                <div class="guide-step">
+                  <div class="step-number">4</div>
+                  <div class="step-content">
+                    <h4>Delete an Entry</h4>
+                    <p>Tap the "Delete" button (🗑️) on any row. Confirm the deletion when prompted. This action cannot be undone.</p>
+                  </div>
+                </div>
+                
+                <div class="guide-step">
+                  <div class="step-number">5</div>
+                  <div class="step-content">
+                    <h4>Export Data</h4>
+                    <p>Tap "Export" to download all records as a CSV file. This file can be opened in Excel, Google Sheets, or imported into databases.</p>
+                  </div>
+                </div>
+                
+                <div class="guide-step">
+                  <div class="step-number">6</div>
+                  <div class="step-content">
+                    <h4>Download Photos</h4>
+                    <p>Tap "Download Photos" to download all storefront images as a ZIP file. Photos are named with their store names for easy identification.</p>
+                  </div>
+                </div>
+                
+                <div class="guide-step">
+                  <div class="step-number">7</div>
+                  <div class="step-content">
+                    <h4>Clear All Records</h4>
+                    <p>Tap "Clear" to delete all records at once. You'll be asked to confirm before all data is permanently removed.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Batch Upload Guide -->
+            <div class="guide-section">
+              <div class="guide-header">
+                <span class="guide-icon">📤</span>
+                <h3>Batch Upload</h3>
+              </div>
+              <p class="guide-intro">Process multiple storefront images at once with AI-powered extraction.</p>
+              
+              <div class="guide-steps">
+                <div class="guide-step">
+                  <div class="step-number">1</div>
+                  <div class="step-content">
+                    <h4>Select Multiple Images</h4>
+                    <p>Tap "Select Images" and choose multiple photos from your device. Only PNG and JPG/JPEG formats are supported. HEIC images will be automatically converted.</p>
+                  </div>
+                </div>
+                
+                <div class="guide-step">
+                  <div class="step-number">2</div>
+                  <div class="step-content">
+                    <h4>AI Processing</h4>
+                    <p>The app will process each image sequentially using GPT-4o Vision. A status message shows progress (e.g., "Processing photo 3 of 10...").</p>
+                  </div>
+                </div>
+                
+                <div class="guide-step">
+                  <div class="step-number">3</div>
+                  <div class="step-content">
+                    <h4>Review Batch Results</h4>
+                    <p>All processed entries appear in the Batch Upload table. Each entry includes extracted data and a thumbnail photo.</p>
+                  </div>
+                </div>
+                
+                <div class="guide-step">
+                  <div class="step-number">4</div>
+                  <div class="step-content">
+                    <h4>Edit Batch Entries</h4>
+                    <p>Like Records, you can edit any entry in the batch table by tapping the "Edit" button (✏️) on the row.</p>
+                  </div>
+                </div>
+                
+                <div class="guide-step">
+                  <div class="step-number">5</div>
+                  <div class="step-content">
+                    <h4>Export Batch Data</h4>
+                    <p>Tap "Export" to download the batch results as a CSV file. Tap "Download Photos" to get all batch images as a ZIP file.</p>
+                  </div>
+                </div>
+                
+                <div class="guide-step">
+                  <div class="step-number">6</div>
+                  <div class="step-content">
+                    <h4>Clear Batch</h4>
+                    <p>Tap "Clear" to remove all batch entries. This only clears the batch table, not your main Records.</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="guide-tip">
+                <span class="tip-icon">💡</span>
+                <div class="tip-content">
+                  <strong>Tip:</strong> Batch Upload is separate from Records. Use it for bulk processing, then export the results. Your main scanning Records remain untouched.
+                </div>
+              </div>
+            </div>
+
+            <!-- Map Guide -->
+            <div class="guide-section">
+              <div class="guide-header">
+                <span class="guide-icon">🗺️</span>
+                <h3>Map & Route Planning</h3>
+              </div>
+              <p class="guide-intro">Visualize locations, plan routes, and create geofences on OpenStreetMap.</p>
+              
+              <div class="guide-steps">
+                <div class="guide-step">
+                  <div class="step-number">1</div>
+                  <div class="step-content">
+                    <h4>Grant Location Access</h4>
+                    <p>When you first open the Map, your browser will request location permission. Tap "Allow" to show your current position on the map.</p>
+                  </div>
+                </div>
+                
+                <div class="guide-step">
+                  <div class="step-number">2</div>
+                  <div class="step-content">
+                    <h4>View Mini Map</h4>
+                    <p>The mini map shows your current location. Tap the expand button (⛶) to open the full-screen map for advanced features.</p>
+                  </div>
+                </div>
+                
+                <div class="guide-step">
+                  <div class="step-number">3</div>
+                  <div class="step-content">
+                    <h4>Navigate the Map</h4>
+                    <p>Pinch to zoom, drag to pan. Tap "My Location" (📍) to center the map on your current position. Tap "Follow Location" (🎯) to enable auto-tracking.</p>
+                  </div>
+                </div>
+                
+                <div class="guide-step">
+                  <div class="step-number">4</div>
+                  <div class="step-content">
+                    <h4>Add Route Points</h4>
+                    <p>Tap "Add Point" to enable point-adding mode. Then tap anywhere on the map to add waypoints. Points are connected automatically to form a route.</p>
+                  </div>
+                </div>
+                
+                <div class="guide-step">
+                  <div class="step-number">5</div>
+                  <div class="step-content">
+                    <h4>Optimize Route</h4>
+                    <p>After adding multiple points, tap "Optimize" to reorder waypoints for the shortest total distance. Great for planning efficient field visits.</p>
+                  </div>
+                </div>
+                
+                <div class="guide-step">
+                  <div class="step-number">6</div>
+                  <div class="step-content">
+                    <h4>Draw Markers & Shapes</h4>
+                    <p>Use the drawing tools on the map to place markers (📍), draw lines, polygons, rectangles, and circles. Perfect for marking territories or geofences.</p>
+                  </div>
+                </div>
+                
+                <div class="guide-step">
+                  <div class="step-number">7</div>
+                  <div class="step-content">
+                    <h4>Change Marker Style</h4>
+                    <p>Tap "Marker: Cross" to cycle through marker styles (Cross, Dot, Circle). This helps differentiate between different types of locations.</p>
+                  </div>
+                </div>
+                
+                <div class="guide-step">
+                  <div class="step-number">8</div>
+                  <div class="step-content">
+                    <h4>View Route Stats</h4>
+                    <p>At the bottom of the map, see total distance, estimated time, and number of waypoints for your planned route.</p>
+                  </div>
+                </div>
+                
+                <div class="guide-step">
+                  <div class="step-number">9</div>
+                  <div class="step-content">
+                    <h4>Clear Route</h4>
+                    <p>Tap "Clear Route" to remove all waypoints and start fresh. This doesn't affect drawn shapes or markers.</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="guide-tip">
+                <span class="tip-icon">💡</span>
+                <div class="tip-content">
+                  <strong>Tip:</strong> Use polygons to define service areas or geofences. Draw circles around high-density zones. Lines can mark boundaries or planned paths.
+                </div>
+              </div>
+            </div>
+
+            <!-- General Tips -->
+            <div class="guide-section">
+              <div class="guide-header">
+                <span class="guide-icon">⚡</span>
+                <h3>Tips & Best Practices</h3>
+              </div>
+              
+              <div class="guide-tips-list">
+                <div class="tip-item">
+                  <span class="tip-bullet">📸</span>
+                  <div>
+                    <strong>Clear Photos:</strong> Ensure storefront signage is clearly visible and well-lit for best AI extraction results.
+                  </div>
+                </div>
+                
+                <div class="tip-item">
+                  <span class="tip-bullet">🔄</span>
+                  <div>
+                    <strong>Duplicate Detection:</strong> The app automatically detects and prevents duplicate entries based on store name and address.
+                  </div>
+                </div>
+                
+                <div class="tip-item">
+                  <span class="tip-bullet">💾</span>
+                  <div>
+                    <strong>Data Storage:</strong> All data is stored locally on your device using IndexedDB. Export regularly to back up your data.
+                  </div>
+                </div>
+                
+                <div class="tip-item">
+                  <span class="tip-bullet">🌐</span>
+                  <div>
+                    <strong>Internet Required:</strong> AI processing requires an active internet connection. Map features work offline with cached tiles.
+                  </div>
+                </div>
+                
+                <div class="tip-item">
+                  <span class="tip-bullet">🔋</span>
+                  <div>
+                    <strong>Battery Usage:</strong> Camera and GPS features consume battery. Close the camera when not actively scanning.
+                  </div>
+                </div>
+                
+                <div class="tip-item">
+                  <span class="tip-bullet">📱</span>
+                  <div>
+                    <strong>Mobile Optimized:</strong> This app is designed for mobile use. For best experience, use on a smartphone with camera access.
+                  </div>
+                </div>
+                
+                <div class="tip-item">
+                  <span class="tip-bullet">🗂️</span>
+                  <div>
+                    <strong>Organize Your Work:</strong> Use Records for daily scanning, Batch Upload for processing pre-taken photos, and export data at the end of each session.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Troubleshooting -->
+            <div class="guide-section">
+              <div class="guide-header">
+                <span class="guide-icon">🔧</span>
+                <h3>Troubleshooting</h3>
+              </div>
+              
+              <div class="guide-steps">
+                <div class="guide-step">
+                  <div class="step-content">
+                    <h4>Camera Not Working?</h4>
+                    <p>Check that you've granted camera permission in your browser settings. On iOS Safari: Settings → Safari → Camera. On Android Chrome: Site Settings → Camera.</p>
+                  </div>
+                </div>
+                
+                <div class="guide-step">
+                  <div class="step-content">
+                    <h4>Location Not Found?</h4>
+                    <p>Ensure location services are enabled for your browser. Check device settings and grant permission when prompted.</p>
+                  </div>
+                </div>
+                
+                <div class="guide-step">
+                  <div class="step-content">
+                    <h4>AI Extraction Failed?</h4>
+                    <p>Ensure the photo is clear and the storefront signage is visible. Try retaking the photo with better lighting or closer zoom.</p>
+                  </div>
+                </div>
+                
+                <div class="guide-step">
+                  <div class="step-content">
+                    <h4>HEIC Upload Failed?</h4>
+                    <p>HEIC images are automatically converted to JPEG. If conversion fails, manually convert the image to JPG before uploading.</p>
+                  </div>
+                </div>
+                
+                <div class="guide-step">
+                  <div class="step-content">
+                    <h4>Data Not Saving?</h4>
+                    <p>Check that your browser allows local storage. Clear browser cache if issues persist, but note this will delete stored data.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+      </div>
     </section>
 
     <!-- Vision Menu Screen -->
@@ -45,24 +587,77 @@
       <div class="vision-menu-header">
         <button id="homeBackBtn" class="icon-btn" title="Back to home">⟵</button>
         <div class="vision-menu-title">
-          <span class="eyebrow">bns</span>
-          <h1>Vision</h1>
-          <p class="vision-menu-tagline">Choose where to begin.</p>
+          <h1>beefnoodlesoup<span class="vision-suffix">Vision</span></h1>
         </div>
       </div>
       <div class="vision-menu-grid">
-        <button class="vision-menu-tile" data-vision-target="camera">
-          <div class="tile-icon">📷</div>
-          <span>Camera</span>
-        </button>
         <button class="vision-menu-tile" data-vision-target="data">
-          <div class="tile-icon">📊</div>
-          <span>Data</span>
+          <div class="tile-icon">📋</div>
+          <span>Records</span>
+        </button>
+        <button class="vision-menu-tile" data-vision-target="batch">
+          <div class="tile-icon">📤</div>
+          <span>Batch Upload</span>
         </button>
         <button class="vision-menu-tile" data-vision-target="map">
           <div class="tile-icon">🗺️</div>
           <span>Map</span>
         </button>
+        <button class="vision-menu-tile" data-vision-target="guide">
+          <div class="tile-icon">📖</div>
+          <span>Guide</span>
+        </button>
+      </div>
+      <div class="vision-scan-action">
+        <button id="startScanningBtn" class="start-scanning-btn">
+          <span class="scan-icon">📷</span>
+          <span class="scan-text">Start Scanning</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Batch Upload Screen -->
+    <section id="batchUploadScreen" class="screen">
+      <div class="vision-app">
+        <div class="vision-topbar">
+          <button id="batchBackBtn" class="icon-btn" title="Back">⟵</button>
+          <h2 class="view-title">Batch Upload</h2>
+        </div>
+        <section class="vision-view active">
+          <div class="card">
+            <div class="batch-upload-area">
+              <button id="batchUploadBtn" class="btn">Select Images</button>
+              <input type="file" id="batchImageInput" accept="image/*" multiple style="display:none" />
+              <p class="upload-hint">Upload multiple storefront images at once</p>
+            </div>
+            <div id="batchStatus" class="muted"></div>
+            <div class="table-container">
+              <table id="batchResultsTable">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Photo</th>
+                    <th>POI Name</th>
+                    <th>Lat-Long</th>
+                    <th>House_No</th>
+                    <th>Street</th>
+                    <th>Unit</th>
+                    <th>Building</th>
+                    <th>Postcode</th>
+                    <th>Remarks</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <div class="toolbar">
+              <button id="batchExportBtn" class="btn">Export</button>
+              <button id="batchDownloadPhotosBtn" class="btn">Download Photos</button>
+              <button id="batchClearBtn" class="btn">Clear</button>
+            </div>
+          </div>
+        </section>
       </div>
     </section>
 
@@ -71,52 +666,46 @@
       <div class="vision-app">
         <div class="vision-topbar">
           <button id="visionMenuBackBtn" class="icon-btn" title="Back">⟵</button>
-          <div class="vision-tabs">
-            <button class="vision-tab active" data-view="camera">Camera</button>
-            <button class="vision-tab" data-view="data">Data</button>
-            <button class="vision-tab" data-view="map">Map</button>
-          </div>
+          <h2 class="view-title" id="currentViewTitle">Records</h2>
         </div>
 
-        <section id="cameraView" class="vision-view active" data-view="camera">
-          <div class="video-wrapper">
-            <video id="camera" autoplay playsinline></video>
-            <div id="progressBar"><div id="progressFill"></div></div>
-            <button id="scanBtn" class="scan-btn">Scan</button>
-
-            <!-- Zoom Controls -->
-            <div class="zoom-controls">
-              <button id="zoomOut" class="zoom-btn" title="Zoom Out">−</button>
-              <div class="zoom-indicator">
-                <span id="zoomLevel">1.0x</span>
-              </div>
-              <button id="zoomIn" class="zoom-btn" title="Zoom In">+</button>
-              <button id="zoomReset" class="zoom-reset-btn" title="Reset Zoom">⌂</button>
-            </div>
-
-            <div id="scanningOverlay" class="scanning-overlay">
-              <div class="scanning-content">
-                <div class="spinner"></div>
-                <div class="scanning-text">Scanning...</div>
-              </div>
-            </div>
-          </div>
+        <section id="cameraView" class="vision-view" data-view="camera">
+    <div class="video-wrapper">
+      <video id="camera" autoplay playsinline></video>
+      <div id="progressBar"><div id="progressFill"></div></div>
+      <div id="status" class="muted camera-status"></div>
+      <button id="scanBtn" class="scan-btn">Scan</button>
+      
+      <!-- Zoom Controls -->
+      <div class="zoom-controls">
+        <button id="zoomOut" class="zoom-btn" title="Zoom Out">−</button>
+        <div class="zoom-indicator">
+          <span id="zoomLevel">1.0x</span>
+        </div>
+        <button id="zoomIn" class="zoom-btn" title="Zoom In">+</button>
+        <button id="zoomReset" class="zoom-reset-btn" title="Reset Zoom">⌂</button>
+      </div>
+      
+      <div id="scanningOverlay" class="scanning-overlay">
+        <div class="scanning-content">
+          <div class="spinner"></div>
+          <div class="scanning-text">Scanning...</div>
+        </div>
+      </div>
+    </div>
         </section>
 
-        <section id="dataView" class="vision-view" data-view="data">
+        <section id="dataView" class="vision-view active" data-view="data">
           <div class="card">
             <div class="toolbar">
               <button id="exportBtn" class="btn">Export</button>
-              <button id="downloadAllPhotosBtn" class="btn">Download</button>
-              <button id="uploadBtn" class="btn">Upload</button>
-              <input type="file" id="imageInput" accept="image/*" style="display:none" />
+              <button id="downloadAllPhotosBtn" class="btn">Download Photos</button>
             </div>
             <div class="search-toolbar">
               <input type="text" id="storeSearchInput" placeholder="Search for store name in table..." />
               <button id="searchLocationBtn" class="btn">🔍 Search</button>
               <button id="clearBtn" class="btn">Clear</button>
             </div>
-            <div id="status" class="muted"></div>
             <div class="table-container">
               <table id="resultsTable">
                 <thead>
@@ -141,48 +730,48 @@
         </section>
 
         <section id="mapView" class="vision-view" data-view="map">
-          <div id="mapContainer" class="map-container">
-            <div class="map-header">
-              <div class="map-info">
-                <span id="mapStatus">📍 Loading location...</span>
-                <button id="toggleMiniMapBtn" class="map-follow-btn" title="Minimize map">▾</button>
-                <span id="routeProgress"></span>
-              </div>
-              <div class="map-header-buttons">
-                <button id="followLocationBtn" class="map-follow-btn" title="Follow Location">🎯</button>
-                <button id="requestLocationBtn" class="map-location-btn" title="Request Location" style="display:none;">📍</button>
-                <button id="mapExpandBtn" class="map-expand-btn" title="Expand Map">⛶</button>
-              </div>
-            </div>
-            <div id="miniMap" class="mini-map"></div>
-
-            <!-- Full Screen Map Overlay -->
-            <div id="fullMapOverlay" class="full-map-overlay hidden">
-              <div class="full-map-header">
-                <h3>Route Planning</h3>
-                <div class="map-controls">
-                  <button id="centerOnUserBtn" class="map-btn">📍 My Location</button>
-                  <button id="clearRouteBtn" class="map-btn">Clear Route</button>
-                  <button id="addRoutePointModeBtn" class="map-btn">Add Point</button>
-                  <button id="markerStyleBtn" class="map-btn" title="Cycle marker style">Marker: Cross</button>
-                  <button id="optimizeRouteBtn" class="map-btn">Optimize</button>
-                </div>
-                <button id="mapCloseBtn" class="map-close-btn">×</button>
-              </div>
-              <div id="fullMap" class="full-map"></div>
-              <div class="map-footer">
-                <div class="route-stats">
-                  <span id="routeDistance">Distance: 0 km</span>
-                  <span id="routeTime">Time: 0 min</span>
-                  <span id="routePoints">Points: 0</span>
-                </div>
-              </div>
-            </div>
+    <div id="mapContainer" class="map-container">
+      <div class="map-header">
+        <div class="map-info">
+          <span id="mapStatus">📍 Loading location...</span>
+          <button id="toggleMiniMapBtn" class="map-follow-btn" title="Minimize map">▾</button>
+          <span id="routeProgress"></span>
+        </div>
+        <div class="map-header-buttons">
+          <button id="followLocationBtn" class="map-follow-btn" title="Follow Location">🎯</button>
+          <button id="requestLocationBtn" class="map-location-btn" title="Request Location" style="display:none;">📍</button>
+          <button id="mapExpandBtn" class="map-expand-btn" title="Expand Map">⛶</button>
+        </div>
+      </div>
+      <div id="miniMap" class="mini-map"></div>
+      
+      <!-- Full Screen Map Overlay -->
+      <div id="fullMapOverlay" class="full-map-overlay hidden">
+        <div class="full-map-header">
+          <h3>Route Planning</h3>
+          <div class="map-controls">
+            <button id="centerOnUserBtn" class="map-btn">📍 My Location</button>
+            <button id="clearRouteBtn" class="map-btn">Clear Route</button>
+            <button id="addRoutePointModeBtn" class="map-btn">Add Point</button>
+            <button id="markerStyleBtn" class="map-btn" title="Cycle marker style">Marker: Cross</button>
+            <button id="optimizeRouteBtn" class="map-btn">Optimize</button>
           </div>
+          <button id="mapCloseBtn" class="map-close-btn">×</button>
+        </div>
+        <div id="fullMap" class="full-map"></div>
+        <div class="map-footer">
+          <div class="route-stats">
+            <span id="routeDistance">Distance: 0 km</span>
+            <span id="routeTime">Time: 0 min</span>
+            <span id="routePoints">Points: 0</span>
+          </div>
+        </div>
+      </div>
+    </div>
         </section>
       </div>
     </main>
-  </div>
+    </div>
 
   <!-- Leaflet.js for Maps -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -195,6 +784,8 @@
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
   <!-- Spell correction library -->
   <script src="https://cdn.jsdelivr.net/npm/didyoumean2@3/dist/didyoumean2.min.js"></script>
+  <!-- HEIC conversion library -->
+  <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
 
   <!-- App logic (ESM) -->
   <script type="module" src="script.js"></script>
