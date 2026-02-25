@@ -365,11 +365,64 @@ async function handleGetSilverZones(params) {
         geojsonUrl = metadata.data.downloadUrl;
       }
       
+      // If no direct download URL, check for childDatasets
+      if (!geojsonUrl && metadata.data && metadata.data.collectionMetadata && metadata.data.collectionMetadata.childDatasets) {
+        const childDatasets = metadata.data.collectionMetadata.childDatasets;
+        console.log(`Found ${childDatasets.length} child datasets, fetching metadata...`);
+        
+        // Try to fetch metadata for each child dataset to find GeoJSON download URL
+        for (const datasetId of childDatasets) {
+          try {
+            const datasetHeaders = {
+              'Accept': 'application/json',
+            };
+            if (apiKey) {
+              datasetHeaders['x-api-key'] = apiKey;
+            }
+            
+            const datasetMetadataResponse = await fetch(`https://api-production.data.gov.sg/v2/public/api/datasets/${datasetId}/metadata`, {
+              headers: datasetHeaders,
+            });
+            
+            if (datasetMetadataResponse.ok) {
+              const datasetMetadata = await datasetMetadataResponse.json();
+              
+              // Check for downloads in dataset metadata
+              if (datasetMetadata.data && datasetMetadata.data.downloads && Array.isArray(datasetMetadata.data.downloads)) {
+                const geojsonDownload = datasetMetadata.data.downloads.find(d => 
+                  d.format && d.format.toLowerCase() === 'geojson'
+                );
+                if (geojsonDownload && geojsonDownload.url) {
+                  geojsonUrl = geojsonDownload.url;
+                  console.log(`Found GeoJSON URL in child dataset ${datasetId}: ${geojsonUrl}`);
+                  break;
+                }
+              }
+              
+              // Try alternative structure
+              if (!geojsonUrl && datasetMetadata.data && datasetMetadata.data.downloadUrl) {
+                geojsonUrl = datasetMetadata.data.downloadUrl;
+                console.log(`Found download URL in child dataset ${datasetId}: ${geojsonUrl}`);
+                break;
+              }
+            }
+          } catch (datasetErr) {
+            console.warn(`Error fetching dataset ${datasetId} metadata:`, datasetErr.message);
+            // Continue to next dataset
+          }
+        }
+      }
+      
       if (geojsonUrl) {
+        const geojsonHeaders = {
+          'Accept': 'application/json',
+        };
+        if (apiKey) {
+          geojsonHeaders['x-api-key'] = apiKey;
+        }
+        
         const geojsonResponse = await fetch(geojsonUrl, {
-          headers: {
-            'Accept': 'application/json',
-          },
+          headers: geojsonHeaders,
         });
         
         if (geojsonResponse.ok) {
@@ -470,6 +523,54 @@ async function handleGetSchoolZones(params) {
       // Try direct download link from metadata
       if (!geojsonUrl && metadata.data && metadata.data.downloadUrl) {
         geojsonUrl = metadata.data.downloadUrl;
+      }
+      
+      // If no direct download URL, check for childDatasets
+      if (!geojsonUrl && metadata.data && metadata.data.collectionMetadata && metadata.data.collectionMetadata.childDatasets) {
+        const childDatasets = metadata.data.collectionMetadata.childDatasets;
+        console.log(`Found ${childDatasets.length} child datasets, fetching metadata...`);
+        
+        // Try to fetch metadata for each child dataset to find GeoJSON download URL
+        for (const datasetId of childDatasets) {
+          try {
+            const datasetHeaders = {
+              'Accept': 'application/json',
+            };
+            if (apiKey) {
+              datasetHeaders['x-api-key'] = apiKey;
+            }
+            
+            const datasetMetadataResponse = await fetch(`https://api-production.data.gov.sg/v2/public/api/datasets/${datasetId}/metadata`, {
+              headers: datasetHeaders,
+            });
+            
+            if (datasetMetadataResponse.ok) {
+              const datasetMetadata = await datasetMetadataResponse.json();
+              
+              // Check for downloads in dataset metadata
+              if (datasetMetadata.data && datasetMetadata.data.downloads && Array.isArray(datasetMetadata.data.downloads)) {
+                const geojsonDownload = datasetMetadata.data.downloads.find(d => 
+                  d.format && d.format.toLowerCase() === 'geojson'
+                );
+                if (geojsonDownload && geojsonDownload.url) {
+                  geojsonUrl = geojsonDownload.url;
+                  console.log(`Found GeoJSON URL in child dataset ${datasetId}: ${geojsonUrl}`);
+                  break;
+                }
+              }
+              
+              // Try alternative structure
+              if (!geojsonUrl && datasetMetadata.data && datasetMetadata.data.downloadUrl) {
+                geojsonUrl = datasetMetadata.data.downloadUrl;
+                console.log(`Found download URL in child dataset ${datasetId}: ${geojsonUrl}`);
+                break;
+              }
+            }
+          } catch (datasetErr) {
+            console.warn(`Error fetching dataset ${datasetId} metadata:`, datasetErr.message);
+            // Continue to next dataset
+          }
+        }
       }
       
       if (geojsonUrl) {
