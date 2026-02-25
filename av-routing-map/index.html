@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AV Routing Map</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="av-routing-map.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-mark">bnsV</div>
+      <div class="brand-text">
+        <div class="brand-title">AV Routing Map</div>
+        <div class="brand-subtitle">Road network analysis for autonomous vehicles</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <span id="statusBadge" class="status-badge">Ready</span>
+      <div id="errorNotification" class="error-notification hidden"></div>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="sidebar">
+      <div class="sidebar-header">
+        <div>
+          <div class="sidebar-title">Filters & Controls</div>
+          <div class="sidebar-meta"><span id="featureCount">0</span> roads loaded</div>
+        </div>
+        <button id="fitAllBtn" class="ghost-btn">Zoom to Singapore</button>
+      </div>
+      
+      <div class="filters">
+        <div class="filter-section">
+          <label class="filter-label">Road Type</label>
+          <select id="filterRoadType" class="filter-select">
+            <option value="all">All roads</option>
+            <option value="motorway">Motorway</option>
+            <option value="trunk">Trunk</option>
+            <option value="primary">Primary</option>
+            <option value="secondary">Secondary</option>
+            <option value="tertiary">Tertiary</option>
+            <option value="residential">Residential</option>
+            <option value="service">Service</option>
+          </select>
+        </div>
+
+        <div class="filter-section">
+          <label class="filter-label">Minimum Lanes</label>
+          <select id="filterLanes" class="filter-select">
+            <option value="0">Any</option>
+            <option value="2">2+ lanes</option>
+            <option value="3">3+ lanes</option>
+            <option value="4">4+ lanes</option>
+            <option value="6">6+ lanes</option>
+          </select>
+        </div>
+
+        <div class="filter-section">
+          <label class="filter-label">Restricted Zones</label>
+          <div class="toggle-group">
+            <label class="toggle-row">
+              <input type="checkbox" id="showSilverZones">
+              <span>Silver Zones</span>
+            </label>
+            <label class="toggle-row">
+              <input type="checkbox" id="showSchoolZones">
+              <span>School Zones</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="filter-section">
+          <label class="filter-label">Traffic Data</label>
+          <div class="toggle-group">
+            <label class="toggle-row">
+              <input type="checkbox" id="showTraffic">
+              <span>Show Traffic/Congestion</span>
+            </label>
+            <label class="toggle-row">
+              <input type="checkbox" id="showRoadClosures">
+              <span>Show Road Closures</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="filter-section">
+          <label class="filter-label">Load Area</label>
+          <div class="button-group">
+            <button id="loadCurrentViewBtn" class="ghost-btn">Load Current View</button>
+            <button id="loadSingaporeBtn" class="ghost-btn">Load Singapore</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="featureList" class="feature-list"></div>
+    </section>
+
+    <section class="map-pane">
+      <div id="map" class="map"></div>
+    </section>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Note: Canvas renderer is built into Leaflet 1.9.4+ -->
+  <script src="av-routing-map.js"></script>
+</body>
+</html>

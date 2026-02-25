@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OneMap Function Diagnostic Tool</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .test-section {
+      background: white;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    button {
+      background: #4be0a8;
+      color: #04101b;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      margin: 5px;
+    }
+    button:hover {
+      background: #2bc48a;
+    }
+    pre {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 15px;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-size: 13px;
+    }
+    .success { color: #4be0a8; }
+    .error { color: #f05454; }
+    .warning { color: #ffd93d; }
+    h1 { color: #0a0f1a; }
+    h2 { color: #111929; margin-top: 0; }
+  </style>
+</head>
+<body>
+  <h1>🔧 OneMap Function Diagnostic Tool</h1>
+  
+  <div class="test-section">
+    <h2>1. Test Function Availability</h2>
+    <p>This tests if the Netlify function is deployed and accessible.</p>
+    <button onclick="testFunction()">Test Function</button>
+    <pre id="testResult">Click the button to test...</pre>
+  </div>
+
+  <div class="test-section">
+    <h2>2. Test Silver Zones</h2>
+    <p>This tests the getSilverZones action specifically.</p>
+    <button onclick="testSilverZones()">Test Silver Zones</button>
+    <pre id="silverResult">Click the button to test...</pre>
+  </div>
+
+  <div class="test-section">
+    <h2>3. Test School Zones</h2>
+    <p>This tests the getSchoolZones action specifically.</p>
+    <button onclick="testSchoolZones()">Test School Zones</button>
+    <pre id="schoolResult">Click the button to test...</pre>
+  </div>
+
+  <div class="test-section">
+    <h2>4. Check Environment Variables</h2>
+    <p>This checks if the function can see the API key (without exposing it).</p>
+    <button onclick="checkEnv()">Check Environment</button>
+    <pre id="envResult">Click the button to test...</pre>
+  </div>
+
+  <script>
+    const functionUrl = '/.netlify/functions/onemap';
+
+    async function testFunction() {
+      const resultEl = document.getElementById('testResult');
+      resultEl.textContent = 'Testing...';
+      
+      try {
+        const response = await fetch(functionUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'test' })
+        });
+        
+        const status = response.status;
+        const data = await response.json().catch(() => ({ error: 'Could not parse response' }));
+        
+        if (status === 200 && data.success) {
+          resultEl.innerHTML = `<span class="success">✅ Function is working!</span>\n\n${JSON.stringify(data, null, 2)}`;
+        } else if (status === 404) {
+          resultEl.innerHTML = `<span class="error">❌ Function not found (404)</span>\n\nPossible issues:\n- Function not deployed\n- Function file missing\n- Build configuration issue\n\nCheck Netlify dashboard → Deploys → Functions tab`;
+        } else {
+          resultEl.innerHTML = `<span class="error">❌ Error: HTTP ${status}</span>\n\n${JSON.stringify(data, null, 2)}`;
+        }
+      } catch (err) {
+        resultEl.innerHTML = `<span class="error">❌ Network Error</span>\n\n${err.message}\n\nMake sure you're testing on the deployed site, not localhost.`;
+      }
+    }
+
+    async function testSilverZones() {
+      const resultEl = document.getElementById('silverResult');
+      resultEl.textContent = 'Testing...';
+      
+      try {
+        const response = await fetch(functionUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'getSilverZones' })
+        });
+        
+        const status = response.status;
+        const data = await response.json().catch(() => ({ error: 'Could not parse response' }));
+        
+        if (status === 200 && data.type === 'FeatureCollection') {
+          resultEl.innerHTML = `<span class="success">✅ Silver Zones loaded!</span>\n\nFound ${data.features.length} zones\n\n${JSON.stringify({ type: data.type, featureCount: data.features.length }, null, 2)}`;
+        } else {
+          resultEl.innerHTML = `<span class="error">❌ Error: HTTP ${status}</span>\n\n${JSON.stringify(data, null, 2)}`;
+        }
+      } catch (err) {
+        resultEl.innerHTML = `<span class="error">❌ Error</span>\n\n${err.message}`;
+      }
+    }
+
+    async function testSchoolZones() {
+      const resultEl = document.getElementById('schoolResult');
+      resultEl.textContent = 'Testing...';
+      
+      try {
+        const response = await fetch(functionUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'getSchoolZones' })
+        });
+        
+        const status = response.status;
+        const data = await response.json().catch(() => ({ error: 'Could not parse response' }));
+        
+        if (status === 200 && data.type === 'FeatureCollection') {
+          resultEl.innerHTML = `<span class="success">✅ School Zones loaded!</span>\n\nFound ${data.features.length} zones\n\n${JSON.stringify({ type: data.type, featureCount: data.features.length }, null, 2)}`;
+        } else {
+          resultEl.innerHTML = `<span class="error">❌ Error: HTTP ${status}</span>\n\n${JSON.stringify(data, null, 2)}`;
+        }
+      } catch (err) {
+        resultEl.innerHTML = `<span class="error">❌ Error</span>\n\n${err.message}`;
+      }
+    }
+
+    async function checkEnv() {
+      const resultEl = document.getElementById('envResult');
+      resultEl.textContent = 'Checking...';
+      
+      try {
+        const response = await fetch(functionUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'test' })
+        });
+        
+        const data = await response.json();
+        
+        let result = 'Environment Check:\n\n';
+        result += `DATAGOVSG_API_KEY: ${data.hasDataGovApiKey ? '✅ Configured' : '❌ Not set'}\n`;
+        result += `ONEMAP_EMAIL: ${data.hasOneMapCredentials ? '✅ Configured' : '❌ Not set'}\n\n`;
+        
+        if (!data.hasDataGovApiKey) {
+          result += '⚠️ DATAGOVSG_API_KEY is required for Silver/School Zones.\n';
+          result += 'Set it in Netlify Dashboard → Site settings → Environment variables.\n';
+        }
+        
+        resultEl.textContent = result;
+      } catch (err) {
+        resultEl.innerHTML = `<span class="error">❌ Could not check environment</span>\n\n${err.message}`;
+      }
+    }
+  </script>
+</body>
+</html>
