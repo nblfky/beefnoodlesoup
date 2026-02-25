@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recover Lost Scans - bnsVision</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #1a1a1a;
+      color: #e0e0e0;
+    }
+    h1 {
+      color: #4be0a8;
+      margin-bottom: 10px;
+    }
+    .info {
+      background: #2a2a2a;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 20px 0;
+      border-left: 3px solid #4be0a8;
+    }
+    .warning {
+      background: #3a2a1a;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 20px 0;
+      border-left: 3px solid #ffaa00;
+    }
+    .error {
+      background: #3a1a1a;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 20px 0;
+      border-left: 3px solid #ff4444;
+    }
+    button {
+      background: #4be0a8;
+      color: #1a1a1a;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin: 10px 5px;
+    }
+    button:hover {
+      background: #3dd099;
+    }
+    button:disabled {
+      background: #666;
+      cursor: not-allowed;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin: 20px 0;
+    }
+    .stat-card {
+      background: #2a2a2a;
+      padding: 15px;
+      border-radius: 8px;
+    }
+    .stat-value {
+      font-size: 32px;
+      font-weight: bold;
+      color: #4be0a8;
+    }
+    .stat-label {
+      font-size: 14px;
+      color: #999;
+      margin-top: 5px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      background: #2a2a2a;
+    }
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #333;
+    }
+    th {
+      background: #333;
+      color: #4be0a8;
+      font-weight: 600;
+    }
+    tr:hover {
+      background: #333;
+    }
+    .scan-entry {
+      font-family: monospace;
+      font-size: 12px;
+      color: #999;
+    }
+    .no-project {
+      color: #ffaa00;
+    }
+    .has-project {
+      color: #4be0a8;
+    }
+    select {
+      background: #2a2a2a;
+      color: #e0e0e0;
+      border: 1px solid #444;
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      min-width: 150px;
+      cursor: pointer;
+    }
+    select:focus {
+      outline: 2px solid #4be0a8;
+      outline-offset: 2px;
+    }
+    /* Mobile responsive styles */
+    @media (max-width: 768px) {
+      body {
+        margin: 10px;
+        padding: 10px;
+      }
+      table {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        white-space: nowrap;
+      }
+      th, td {
+        padding: 8px 6px;
+        font-size: 13px;
+      }
+      select {
+        min-width: 200px;
+        padding: 12px 16px;
+        font-size: 16px; /* Prevent zoom on iOS */
+        width: 100%;
+        max-width: 100%;
+        min-height: 44px; /* Minimum touch target size */
+      }
+      .stat-value {
+        font-size: 24px;
+      }
+      button {
+        width: 100%;
+        margin: 5px 0;
+        padding: 14px 24px;
+        font-size: 16px;
+        min-height: 44px; /* Minimum touch target size */
+      }
+      h1 {
+        font-size: 20px;
+      }
+      h2 {
+        font-size: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+    <a href="../index.html" style="color: #4be0a8; text-decoration: none; font-size: 24px; font-weight: bold;">←</a>
+    <h1 style="margin: 0;">🔧 bnsVision Scan Recovery Tool</h1>
+  </div>
+  
+  <div class="info">
+    <strong>Purpose:</strong> This tool helps recover scans that may have been lost due to data saving issues.
+    It checks localStorage for all scans and identifies ones that might be missing projectId or were not properly saved.
+  </div>
+  
+  <div class="info" id="storageStatus">
+    <strong>💾 localStorage Status:</strong> <span id="storageStatusText">Calculating...</span>
+  </div>
+  
+  <div class="warning" id="storageWarning" style="display: none;">
+    <strong>⚠️ Storage Warning:</strong> <span id="storageInfo"></span>
+  </div>
+  
+  <div id="status"></div>
+  
+  <div class="stats" id="stats"></div>
+  
+  <div>
+    <button onclick="analyzeScans()">🔍 Analyze Scans</button>
+    <button onclick="recoverScans()" id="recoverBtn" disabled>💾 Recover Lost Scans</button>
+    <button onclick="recreateProjects()" id="recreateProjectsBtn" disabled>🔧 Recreate Projects from Scans</button>
+    <button onclick="exportReport()" id="exportBtn" disabled>📄 Export Report</button>
+  </div>
+  
+  <div id="results"></div>
+
+  <script>
+    let scanAnalysis = null;
+    
+    function updateStorageStatus() {
+      try {
+        let totalSize = 0;
+        for (let key in localStorage) {
+          if (localStorage.hasOwnProperty(key)) {
+            totalSize += localStorage[key].length + key.length;
+          }
+        }
+        const sizeInMB = totalSize / (1024 * 1024);
+        const sizeInKB = totalSize / 1024;
+        const sizeDisplay = sizeInMB >= 1 
+          ? `${sizeInMB.toFixed(2)} MB` 
+          : `${sizeInKB.toFixed(2)} KB`;
+        const sizePercent = ((sizeInMB / 5) * 100).toFixed(1);
+        
+        const storageStatusText = document.getElementById('storageStatusText');
+        const storageInfo = document.getElementById('storageInfo');
+        const storageWarning = document.getElementById('storageWarning');
+        
+        // Always show status
+        if (storageStatusText) {
+          storageStatusText.textContent = `${sizeDisplay} / ~5 MB (${sizePercent}% used)`;
+        }
+        
+        // Show warning if over 4MB
+        if (sizeInMB > 4) {
+          if (storageWarning) {
+            storageWarning.style.display = 'block';
+            if (storageInfo) {
+              storageInfo.textContent = `localStorage is ${sizeInMB.toFixed(2)}MB / ~5MB (${((sizeInMB/5)*100).toFixed(0)}% full). This may cause data loss!`;
+            }
+          }
+        } else {
+          if (storageWarning) {
+            storageWarning.style.display = 'none';
+          }
+        }
+      } catch (e) {
+        console.error('Failed to check storage:', e);
+        const storageStatusText = document.getElementById('storageStatusText');
+        if (storageStatusText) {
+          storageStatusText.textContent = 'Unable to calculate storage size';
+        }
+      }
+    }
+    
+    function checkStorageUsage() {
+      updateStorageStatus();
+    }
+    
+    // CRITICAL FIX: Add diagnostic function to help debug localStorage issues
+    function diagnoseLocalStorage() {
+      console.log('🔍 Diagnosing localStorage...');
+      const keys = Object.keys(localStorage);
+      console.log('Total keys in localStorage:', keys.length);
+      
+      keys.forEach(key => {
+        const value = localStorage.getItem(key);
+        const type = typeof value;
+        const length = value ? value.length : 0;
+        const preview = value ? value.substring(0, 50) : 'null';
+        console.log(`  ${key}: type=${type}, length=${length}, preview="${preview}"`);
+        
+        // Check for problematic values
+        if (value === 'undefined' || value === 'null') {
+          console.warn(`  ⚠️ ${key} has invalid value: "${value}"`);
+        }
+      });
+      
+      // Specifically check scans
+      const scansValue = localStorage.getItem('scans');
+      console.log('Scans value:', {
+        exists: scansValue !== null,
+        type: typeof scansValue,
+        isString: typeof scansValue === 'string',
+        length: scansValue ? scansValue.length : 0,
+        firstChars: scansValue ? scansValue.substring(0, 20) : 'null',
+        isUndefinedString: scansValue === 'undefined',
+        isNullString: scansValue === 'null'
+      });
+      
+      // Try to parse
+      if (scansValue) {
+        try {
+          const parsed = JSON.parse(scansValue);
+          console.log('✅ Scans parses successfully, type:', Array.isArray(parsed) ? 'array' : typeof parsed);
+        } catch (e) {
+          console.error('❌ Scans parse error:', e.message);
+        }
+      }
+    }
+    
+    function analyzeScans() {
+      try {
+        // Check storage usage first
+        checkStorageUsage();
+        
+        // Load scans from localStorage
+        const scansJson = localStorage.getItem('scans');
+        
+        // CRITICAL FIX: Handle Android edge case where localStorage might return string "undefined"
+        if (!scansJson || scansJson === 'undefined' || scansJson === 'null') {
+          showStatus('No scans found in localStorage. If scans were created but not saved, they may be lost.', 'error');
+          return;
+        }
+        
+        // CRITICAL FIX: Validate that it's actually JSON before parsing
+        let allScans;
+        try {
+          allScans = JSON.parse(scansJson);
+        } catch (parseError) {
+          console.error('Failed to parse scans JSON:', parseError);
+          console.error('Raw scansJson value:', scansJson);
+          showStatus(`Error parsing scans data: ${parseError.message}. Raw value: ${scansJson ? scansJson.substring(0, 100) : 'null'}`, 'error');
+          return;
+        }
+        
+        if (!Array.isArray(allScans)) {
+          showStatus('Scans data is not an array', 'error');
+          return;
+        }
+        
+        // Load projects
+        const projectsJson = localStorage.getItem('bnsvision_projects');
+        
+        // CRITICAL FIX: Handle Android edge case for projects too
+        let projects;
+        if (!projectsJson || projectsJson === 'undefined' || projectsJson === 'null') {
+          projects = [];
+        } else {
+          try {
+            projects = JSON.parse(projectsJson);
+            if (!Array.isArray(projects)) {
+              projects = [];
+            }
+          } catch (parseError) {
+            console.error('Failed to parse projects JSON:', parseError);
+            console.error('Raw projectsJson value:', projectsJson);
+            projects = []; // Default to empty array if parsing fails
+          }
+        }
+        
+        // Analyze scans
+        const analysis = {
+          total: allScans.length,
+          withProjectId: 0,
+          withoutProjectId: 0,
+          byProject: {},
+          orphaned: [],
+          duplicates: [],
+          recentScans: []
+        };
+        
+        // Check for duplicates by entryId
+        const entryIdMap = {};
+        
+        allScans.forEach((scan, index) => {
+          // Count by project
+          if (scan.projectId) {
+            analysis.withProjectId++;
+            if (!analysis.byProject[scan.projectId]) {
+              analysis.byProject[scan.projectId] = [];
+            }
+            analysis.byProject[scan.projectId].push(scan);
+          } else {
+            analysis.withoutProjectId++;
+            analysis.orphaned.push({ scan, index });
+          }
+          
+          // Check for duplicates
+          if (scan.entryId) {
+            if (entryIdMap[scan.entryId]) {
+              analysis.duplicates.push({
+                entryId: scan.entryId,
+                indices: [entryIdMap[scan.entryId], index]
+              });
+            } else {
+              entryIdMap[scan.entryId] = index;
+            }
+          }
+          
+          // Get recent scans (last 100)
+          if (scan.timestamp) {
+            analysis.recentScans.push({
+              scan,
+              index,
+              timestamp: new Date(scan.timestamp).getTime()
+            });
+          }
+        });
+        
+        // Sort recent scans
+        analysis.recentScans.sort((a, b) => b.timestamp - a.timestamp);
+        analysis.recentScans = analysis.recentScans.slice(0, 100);
+        
+        scanAnalysis = { scans: allScans, projects, analysis };
+        
+        // CRITICAL FIX: Check if scans have projectIds but projects are missing
+        const scansWithProjectIds = allScans.filter(s => s.projectId).length;
+        const uniqueProjectIds = new Set(allScans.filter(s => s.projectId).map(s => s.projectId));
+        const missingProjects = uniqueProjectIds.size - projects.length;
+        
+        displayStats(analysis, projects);
+        displayResults(analysis, projects);
+        
+        document.getElementById('recoverBtn').disabled = false;
+        document.getElementById('recreateProjectsBtn').disabled = false;
+        document.getElementById('exportBtn').disabled = false;
+        
+        let statusMessage = `Analysis complete! Found ${allScans.length} total scans.`;
+        if (scansWithProjectIds > 0 && missingProjects > 0) {
+          statusMessage += ` ⚠️ ${scansWithProjectIds} scans have projectIds but ${missingProjects} project(s) are missing. Use "Recreate Projects from Scans" to restore them.`;
+        }
+        showStatus(statusMessage, scansWithProjectIds > 0 && missingProjects > 0 ? 'warning' : 'info');
+        
+      } catch (error) {
+        console.error('Error analyzing scans:', error);
+        // CRITICAL FIX: Add diagnostic info
+        diagnoseLocalStorage();
+        showStatus('Error analyzing scans: ' + error.message + '. Check console for details.', 'error');
+      }
+    }
+    
+    function displayStats(analysis, projects) {
+      const statsDiv = document.getElementById('stats');
+      
+      // CRITICAL FIX: Ensure projects is always an array
+      if (!Array.isArray(projects)) {
+        console.warn('Projects is not an array, defaulting to empty array');
+        projects = [];
+      }
+      
+      const projectNames = {};
+      projects.forEach(p => {
+        projectNames[p.id] = p.name || p.location || p.id;
+      });
+      
+      // Calculate localStorage size
+      let totalSize = 0;
+      try {
+        for (let key in localStorage) {
+          if (localStorage.hasOwnProperty(key)) {
+            totalSize += localStorage[key].length + key.length;
+          }
+        }
+      } catch (e) {
+        console.error('Failed to calculate storage size:', e);
+      }
+      const sizeInMB = totalSize / (1024 * 1024);
+      const sizeInKB = totalSize / 1024;
+      const sizeDisplay = sizeInMB >= 1 
+        ? `${sizeInMB.toFixed(2)} MB` 
+        : `${sizeInKB.toFixed(2)} KB`;
+      const sizePercent = ((sizeInMB / 5) * 100).toFixed(0);
+      
+      let projectStatsHtml = '';
+      Object.keys(analysis.byProject).forEach(projectId => {
+        const count = analysis.byProject[projectId].length;
+        const projectName = projectNames[projectId] || projectId;
+        projectStatsHtml += `
+          <div class="stat-card">
+            <div class="stat-value">${count}</div>
+            <div class="stat-label">${projectName}</div>
+          </div>
+        `;
+      });
+      
+      statsDiv.innerHTML = `
+        <div class="stat-card">
+          <div class="stat-value">${analysis.total}</div>
+          <div class="stat-label">Total Scans</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${analysis.withProjectId}</div>
+          <div class="stat-label">With Project ID</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${analysis.withoutProjectId}</div>
+          <div class="stat-label">Without Project ID</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${analysis.duplicates.length}</div>
+          <div class="stat-label">Duplicate Entry IDs</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${sizeDisplay}</div>
+          <div class="stat-label">localStorage Size (${sizePercent}% of ~5MB limit)</div>
+        </div>
+        ${projectStatsHtml}
+      `;
+    }
+    
+    function displayResults(analysis, projects) {
+      const resultsDiv = document.getElementById('results');
+      
+      let html = '';
+      
+      // Show orphaned scans
+      if (analysis.orphaned.length > 0) {
+        html += `<h2>⚠️ Scans Without Project ID (${analysis.orphaned.length})</h2>`;
+        html += '<p class="warning">These scans might be recoverable if we can match them to a project.</p>';
+        html += '<div style="overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 20px 0;">';
+        html += '<table>';
+        html += '<tr><th>Index</th><th>Store Name</th><th>Location</th><th>Timestamp</th><th>Entry ID</th><th>Action</th></tr>';
+        
+        analysis.orphaned.forEach(({ scan, index }) => {
+          const timestamp = scan.timestamp ? new Date(scan.timestamp).toLocaleString() : 'Unknown';
+          html += `
+            <tr>
+              <td>${index}</td>
+              <td>${scan.storeName || '-'}</td>
+              <td>${scan.projectLocation || scan.location || '-'}</td>
+              <td>${timestamp}</td>
+              <td class="scan-entry">${scan.entryId || '-'}</td>
+              <td style="min-width: 200px;">
+                <select id="assign-${index}" onchange="assignProject(${index}, this.value)" style="width: 100%; min-width: 200px; padding: 12px; font-size: 16px; min-height: 44px;">
+                  <option value="">Select project...</option>
+                  ${projects.map(p => `<option value="${p.id}">${p.name || p.location || p.id}</option>`).join('')}
+                </select>
+              </td>
+            </tr>
+          `;
+        });
+        
+        html += '</table>';
+        html += '</div>';
+      }
+      
+      // Show duplicates
+      if (analysis.duplicates.length > 0) {
+        html += `<h2>🔁 Duplicate Entry IDs (${analysis.duplicates.length})</h2>`;
+        html += '<p class="warning">These scans have the same entryId and might be duplicates.</p>';
+        html += '<div style="overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 20px 0;">';
+        html += '<table>';
+        html += '<tr><th>Entry ID</th><th>Indices</th><th>Store Names</th></tr>';
+        
+        analysis.duplicates.forEach(dup => {
+          const scan1 = analysis.scans[dup.indices[0]];
+          const scan2 = analysis.scans[dup.indices[1]];
+          html += `
+            <tr>
+              <td class="scan-entry">${dup.entryId}</td>
+              <td>${dup.indices.join(', ')}</td>
+              <td>${scan1.storeName || '-'} / ${scan2.storeName || '-'}</td>
+            </tr>
+          `;
+        });
+        
+        html += '</table>';
+        html += '</div>';
+      }
+      
+      // Show recent scans
+      html += `<h2>📋 Recent Scans (Last 50)</h2>`;
+      html += '<div style="overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 20px 0;">';
+      html += '<table>';
+      html += '<tr><th>Index</th><th>Store Name</th><th>Project ID</th><th>Timestamp</th><th>Entry ID</th></tr>';
+      
+      analysis.recentScans.slice(0, 50).forEach(({ scan, index }) => {
+        const timestamp = new Date(scan.timestamp).toLocaleString();
+        const projectClass = scan.projectId ? 'has-project' : 'no-project';
+        html += `
+          <tr>
+            <td>${index}</td>
+            <td>${scan.storeName || '-'}</td>
+            <td class="${projectClass}">${scan.projectId || 'NO PROJECT'}</td>
+            <td>${timestamp}</td>
+            <td class="scan-entry">${scan.entryId || '-'}</td>
+          </tr>
+        `;
+      });
+      
+      html += '</table>';
+      html += '</div>';
+      
+      resultsDiv.innerHTML = html;
+    }
+    
+    function assignProject(index, projectId) {
+      if (!projectId || !scanAnalysis) return;
+      
+      const scan = scanAnalysis.scans[index];
+      const project = scanAnalysis.projects.find(p => p.id === projectId);
+      
+      if (!project) {
+        alert('Project not found');
+        return;
+      }
+      
+      // Assign project data
+      scan.projectId = project.id;
+      scan.projectName = project.name;
+      scan.projectLocation = project.location;
+      scan.projectDate = project.date;
+      scan.projectEmail = project.email;
+      
+      // Update in localStorage
+      localStorage.setItem('scans', JSON.stringify(scanAnalysis.scans));
+      
+      showStatus(`✅ Assigned scan ${index} to project: ${project.name || project.location}`, 'info');
+      
+      // Refresh analysis
+      analyzeScans();
+    }
+    
+    function recoverScans() {
+      if (!scanAnalysis) {
+        showStatus('Please analyze scans first', 'error');
+        return;
+      }
+      
+      const { scans, projects, analysis } = scanAnalysis;
+      
+      let recovered = 0;
+      
+      // Try to recover orphaned scans by matching location/timestamp
+      analysis.orphaned.forEach(({ scan, index }) => {
+        // Try to find matching project by location
+        const matchingProject = projects.find(p => 
+          p.location === scan.projectLocation || 
+          p.location === scan.location ||
+          (scan.timestamp && p.date && scan.timestamp.startsWith(p.date))
+        );
+        
+        if (matchingProject) {
+          scan.projectId = matchingProject.id;
+          scan.projectName = matchingProject.name;
+          scan.projectLocation = matchingProject.location;
+          scan.projectDate = matchingProject.date;
+          scan.projectEmail = matchingProject.email;
+          recovered++;
+        }
+      });
+      
+      if (recovered > 0) {
+        // Save recovered scans
+        localStorage.setItem('scans', JSON.stringify(scans));
+        showStatus(`✅ Recovered ${recovered} scans by matching to projects!`, 'info');
+        
+        // Refresh analysis
+        analyzeScans();
+      } else {
+        showStatus('No scans could be automatically recovered. Please assign projects manually.', 'warning');
+      }
+    }
+    
+    // CRITICAL FIX: Recreate projects from scan data
+    function recreateProjects() {
+      if (!scanAnalysis) {
+        showStatus('Please analyze scans first', 'error');
+        return;
+      }
+      
+      const { scans } = scanAnalysis;
+      
+      // Extract unique projects from scans
+      const projectMap = new Map();
+      
+      scans.forEach(scan => {
+        if (scan.projectId && scan.projectName) {
+          // If project doesn't exist in map, create it
+          if (!projectMap.has(scan.projectId)) {
+            // Extract default address from scans (use most common values)
+            const projectScans = scans.filter(s => s.projectId === scan.projectId);
+            const defaultAddress = {
+              houseNo: projectScans.find(s => s.houseNo)?.houseNo || '',
+              street: projectScans.find(s => s.street)?.street || '',
+              floor: projectScans.find(s => s.floor)?.floor || '',
+              building: projectScans.find(s => s.building)?.building || '',
+              postcode: projectScans.find(s => s.postcode)?.postcode || ''
+            };
+            
+            projectMap.set(scan.projectId, {
+              id: scan.projectId,
+              type: 'Onground Benchmarking',
+              name: scan.projectName,
+              date: scan.projectDate || new Date().toISOString().split('T')[0],
+              email: scan.projectEmail || '',
+              location: scan.projectLocation || '',
+              environment: scan.environment || 'Indoor',
+              syncEnabled: true, // Default to enabled
+              defaultAddress: defaultAddress,
+              sheetTab: scan.projectLocation || '' // Use location as sheet tab
+            });
+          }
+        }
+      });
+      
+      if (projectMap.size === 0) {
+        showStatus('No projects found in scan data. Scans may not have project information.', 'warning');
+        return;
+      }
+      
+      // Load existing projects
+      const existingProjectsJson = localStorage.getItem('bnsvision_projects');
+      let existingProjects = [];
+      if (existingProjectsJson && existingProjectsJson !== 'undefined' && existingProjectsJson !== 'null') {
+        try {
+          existingProjects = JSON.parse(existingProjectsJson);
+          if (!Array.isArray(existingProjects)) {
+            existingProjects = [];
+          }
+        } catch (e) {
+          existingProjects = [];
+        }
+      }
+      
+      // Merge: keep existing projects, add new ones from scans
+      const existingIds = new Set(existingProjects.map(p => p.id));
+      const recreatedProjects = Array.from(projectMap.values());
+      
+      let added = 0;
+      let updated = 0;
+      
+      recreatedProjects.forEach(newProject => {
+        const existingIndex = existingProjects.findIndex(p => p.id === newProject.id);
+        if (existingIndex >= 0) {
+          // Update existing project (preserve some fields, update others)
+          existingProjects[existingIndex] = {
+            ...existingProjects[existingIndex],
+            name: newProject.name,
+            location: newProject.location,
+            date: newProject.date,
+            email: newProject.email,
+            environment: newProject.environment,
+            defaultAddress: newProject.defaultAddress,
+            sheetTab: newProject.sheetTab
+          };
+          updated++;
+        } else {
+          // Add new project
+          existingProjects.push(newProject);
+          added++;
+        }
+      });
+      
+      // Save projects
+      try {
+        localStorage.setItem('bnsvision_projects', JSON.stringify(existingProjects));
+        // Also backup to sessionStorage
+        sessionStorage.setItem('projects_backup', JSON.stringify(existingProjects));
+        
+        const message = `✅ Recreated ${added} project(s) and updated ${updated} project(s) from scan data!`;
+        showStatus(message, 'info');
+        
+        // Refresh analysis
+        analyzeScans();
+        
+        // Show alert with instructions
+        setTimeout(() => {
+          alert(`${message}\n\nProjects have been restored. Go to "See All Projects" to view them.`);
+        }, 500);
+      } catch (error) {
+        console.error('Failed to save projects:', error);
+        showStatus('Failed to save projects: ' + error.message, 'error');
+      }
+    }
+    
+    function exportReport() {
+      if (!scanAnalysis) {
+        showStatus('Please analyze scans first', 'error');
+        return;
+      }
+      
+      const report = {
+        timestamp: new Date().toISOString(),
+        analysis: scanAnalysis.analysis,
+        summary: {
+          total: scanAnalysis.analysis.total,
+          withProjectId: scanAnalysis.analysis.withProjectId,
+          withoutProjectId: scanAnalysis.analysis.withoutProjectId,
+          duplicates: scanAnalysis.analysis.duplicates.length
+        }
+      };
+      
+      const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `bnsvision-recovery-report-${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      showStatus('✅ Report exported!', 'info');
+    }
+    
+    function showStatus(message, type) {
+      const statusDiv = document.getElementById('status');
+      statusDiv.className = type || 'info';
+      statusDiv.textContent = message;
+    }
+    
+    // Auto-analyze on load
+    window.addEventListener('load', () => {
+      updateStorageStatus();
+      analyzeScans();
+    });
+  </script>
+</body>
+</html>

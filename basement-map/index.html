@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Basement Carpark LiDAR Map</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="basement-map.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-mark">bnsV</div>
+      <div class="brand-text">
+        <div class="brand-title">Basement Carpark LiDAR</div>
+        <div class="brand-subtitle">Polygonised sites (GeoJSON)</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <span id="statusBadge" class="status-badge">Loading data…</span>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="sidebar">
+      <div class="sidebar-header">
+        <div>
+          <div class="sidebar-title">Sites</div>
+          <div class="sidebar-meta"><span id="featureCount">0</span> features</div>
+        </div>
+        <button id="fitAllBtn" class="ghost-btn">Zoom to all</button>
+      </div>
+      <div id="featureList" class="feature-list"></div>
+    </section>
+
+    <section class="map-pane">
+      <div id="map" class="map"></div>
+    </section>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/osmtogeojson@3.0.0/osmtogeojson.min.js"></script>
+  <script src="basement-map.js"></script>
+</body>
+</html>
+
+
+
+

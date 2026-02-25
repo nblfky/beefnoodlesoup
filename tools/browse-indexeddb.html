@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IndexedDB Photo Browser - bnsVision</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 1200px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #1a1a1a;
+      color: #e0e0e0;
+    }
+    h1 {
+      color: #4be0a8;
+      margin-bottom: 10px;
+    }
+    .info {
+      background: #2a2a2a;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 20px 0;
+      border-left: 3px solid #4be0a8;
+    }
+    .warning {
+      background: #3a2a1a;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 20px 0;
+      border-left: 3px solid #ffaa00;
+    }
+    button {
+      background: #4be0a8;
+      color: #1a1a1a;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin: 10px 5px;
+    }
+    button:hover {
+      background: #3dd099;
+    }
+    button:disabled {
+      background: #666;
+      cursor: not-allowed;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin: 20px 0;
+    }
+    .stat-card {
+      background: #2a2a2a;
+      padding: 15px;
+      border-radius: 8px;
+    }
+    .stat-value {
+      font-size: 32px;
+      font-weight: bold;
+      color: #4be0a8;
+    }
+    .stat-label {
+      font-size: 14px;
+      color: #999;
+      margin-top: 5px;
+    }
+    .photo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+      margin: 20px 0;
+    }
+    .photo-card {
+      background: #2a2a2a;
+      border-radius: 8px;
+      padding: 15px;
+      border: 2px solid #333;
+      transition: border-color 0.3s;
+    }
+    .photo-card:hover {
+      border-color: #4be0a8;
+    }
+    .photo-preview {
+      width: 100%;
+      height: 200px;
+      object-fit: contain;
+      background: #1a1a1a;
+      border-radius: 6px;
+      margin-bottom: 10px;
+    }
+    .photo-info {
+      font-size: 12px;
+      color: #999;
+      margin: 5px 0;
+      word-break: break-all;
+    }
+    .photo-id {
+      font-family: monospace;
+      color: #4be0a8;
+      font-weight: 600;
+    }
+    .photo-filename {
+      font-family: monospace;
+      color: #fff;
+    }
+    .photo-size {
+      color: #999;
+    }
+    .photo-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .btn-small {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+    .btn-secondary {
+      background: #555;
+    }
+    .btn-secondary:hover {
+      background: #666;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      background: #2a2a2a;
+    }
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #333;
+    }
+    th {
+      background: #333;
+      color: #4be0a8;
+      font-weight: 600;
+    }
+    tr:hover {
+      background: #333;
+    }
+    .matched {
+      color: #4be0a8;
+    }
+    .unmatched {
+      color: #ffaa00;
+    }
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #999;
+    }
+  </style>
+</head>
+<body>
+  <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+    <a href="../index.html" style="color: #4be0a8; text-decoration: none; font-size: 24px; font-weight: bold;">←</a>
+    <h1 style="margin: 0;">📸 IndexedDB Photo Browser</h1>
+  </div>
+  
+  <div class="info">
+    <strong>Purpose:</strong> Browse all photos stored in IndexedDB. This includes full-resolution photos that may not have scan metadata in localStorage.
+    You can view, download, and match photos to scans.
+  </div>
+  
+  <div id="status"></div>
+  
+  <div class="stats" id="stats"></div>
+  
+  <div>
+    <button onclick="loadPhotos()">🔍 Load Photos from IndexedDB</button>
+    <button onclick="matchToScans()" id="matchBtn" disabled>🔗 Match to Scans</button>
+    <button onclick="downloadAll()" id="downloadAllBtn" disabled>📥 Download All Photos</button>
+    <button onclick="exportReport()" id="exportBtn" disabled>📄 Export Report</button>
+  </div>
+  
+  <div style="display: flex; align-items: center; gap: 15px; margin: 20px 0; flex-wrap: wrap;">
+    <div id="viewToggle">
+      <button onclick="showGridView()" id="gridViewBtn" class="btn-secondary">Grid View</button>
+      <button onclick="showTableView()" id="tableViewBtn" class="btn-secondary">Table View</button>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <label for="sortSelect" style="color: #999; font-size: 14px;">Sort by:</label>
+      <select id="sortSelect" onchange="applySort()" style="background: #2a2a2a; color: #e0e0e0; border: 1px solid #444; padding: 8px 12px; border-radius: 6px; font-size: 14px; cursor: pointer;">
+        <option value="latest">Latest First</option>
+        <option value="oldest">Oldest First</option>
+      </select>
+    </div>
+  </div>
+  
+  <div id="results"></div>
+
+  <script>
+    const PHOTO_DB_NAME = 'bnsv_photo_db';
+    const PHOTO_STORE = 'photos';
+    const THUMBNAIL_STORE = 'thumbnails'; // Separate store for thumbnails
+    let allPhotos = [];
+    let scans = [];
+    let currentSort = 'latest'; // 'latest' or 'oldest'
+    
+    function openPhotoDB() {
+      return new Promise((resolve, reject) => {
+        // Use version 2 to match main app (includes thumbnail store)
+        const req = indexedDB.open(PHOTO_DB_NAME, 2);
+        req.onupgradeneeded = function(e) {
+          const db = e.target.result;
+          // Create photos store if it doesn't exist
+          if (!db.objectStoreNames.contains(PHOTO_STORE)) {
+            db.createObjectStore(PHOTO_STORE, { keyPath: 'id' });
+          }
+          // Create thumbnails store if it doesn't exist
+          if (!db.objectStoreNames.contains(THUMBNAIL_STORE)) {
+            db.createObjectStore(THUMBNAIL_STORE, { keyPath: 'id' });
+          }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+    
+    async function getAllPhotos() {
+      try {
+        const db = await openPhotoDB();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(PHOTO_STORE, 'readonly');
+          const photos = [];
+          
+          tx.onerror = () => reject(tx.error);
+          
+          const store = tx.objectStore(PHOTO_STORE);
+          const request = store.openCursor();
+          
+          request.onsuccess = (e) => {
+            const cursor = e.target.result;
+            if (cursor) {
+              const photo = cursor.value;
+              // Calculate size
+              const sizeInKB = photo.blob ? (photo.blob.size / 1024).toFixed(2) : 0;
+              photos.push({
+                ...photo,
+                sizeInKB,
+                sizeInMB: (photo.blob ? photo.blob.size / (1024 * 1024) : 0).toFixed(2)
+              });
+              cursor.continue();
+            } else {
+              resolve(photos);
+            }
+          };
+          
+          request.onerror = () => reject(request.error);
+        });
+      } catch (error) {
+        console.error('Error loading photos:', error);
+        throw error;
+      }
+    }
+    
+    async function loadPhotos() {
+      try {
+        showStatus('Loading photos from IndexedDB...', 'info');
+        document.getElementById('results').innerHTML = '<div class="loading">⏳ Loading...</div>';
+        
+        // Load photos from IndexedDB
+        allPhotos = await getAllPhotos();
+        
+        // Load scans from localStorage for matching
+        try {
+          const scansJson = localStorage.getItem('scans');
+          scans = scansJson ? JSON.parse(scansJson) : [];
+        } catch (e) {
+          scans = [];
+        }
+        
+        if (allPhotos.length === 0) {
+          showStatus('No photos found in IndexedDB', 'warning');
+          document.getElementById('results').innerHTML = '<div class="warning">No photos found in IndexedDB. Photos may not have been saved yet.</div>';
+          return;
+        }
+        
+        displayStats();
+        displayPhotos();
+        
+        document.getElementById('matchBtn').disabled = false;
+        document.getElementById('downloadAllBtn').disabled = false;
+        document.getElementById('exportBtn').disabled = false;
+        
+        showStatus(`✅ Loaded ${allPhotos.length} photos from IndexedDB`, 'info');
+        
+      } catch (error) {
+        showStatus('Error loading photos: ' + error.message, 'error');
+        console.error(error);
+      }
+    }
+    
+    function displayStats() {
+      const statsDiv = document.getElementById('stats');
+      
+      const totalSize = allPhotos.reduce((sum, p) => sum + (p.blob ? p.blob.size : 0), 0);
+      const totalSizeMB = (totalSize / (1024 * 1024)).toFixed(2);
+      
+      // Count matched vs unmatched
+      const matched = allPhotos.filter(p => {
+        const entryId = extractEntryIdFromFilename(p.filename);
+        return scans.some(s => s.entryId === entryId || s.photoId === p.id);
+      }).length;
+      
+      statsDiv.innerHTML = `
+        <div class="stat-card">
+          <div class="stat-value">${allPhotos.length}</div>
+          <div class="stat-label">Total Photos</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${totalSizeMB} MB</div>
+          <div class="stat-label">Total Size</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${matched}</div>
+          <div class="stat-label">Matched to Scans</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${allPhotos.length - matched}</div>
+          <div class="stat-label">Orphaned Photos</div>
+        </div>
+      `;
+    }
+    
+    function extractEntryIdFromFilename(filename) {
+      if (!filename) return null;
+      // Try to extract entryId from filename (e.g., "entry-1234567890-abc123.jpg")
+      const match = filename.match(/entry-([\w-]+)\.jpg/);
+      return match ? `entry-${match[1]}` : null;
+    }
+    
+    function findMatchingScan(photo) {
+      const entryId = extractEntryIdFromFilename(photo.filename);
+      if (entryId) {
+        return scans.find(s => s.entryId === entryId);
+      }
+      // Also check by photoId
+      return scans.find(s => s.photoId === photo.id);
+    }
+    
+    function getPhotoTimestamp(photo) {
+      // Photo IDs are generated as: photo_TIMESTAMP-random
+      // Format: photo_2024-01-15T10-30-45_abc123
+      // The timestamp is ISO format with colons/dots replaced by dashes
+      if (photo.id && typeof photo.id === 'string') {
+        const parts = photo.id.split('_');
+        if (parts.length >= 2 && parts[0] === 'photo') {
+          // Reconstruct ISO timestamp from parts[1] (e.g., "2024-01-15T10-30-45")
+          const timestampStr = parts[1];
+          // Try to parse as ISO date (replace dashes back to colons for time part)
+          // Format: YYYY-MM-DDTHH-MM-SS
+          const isoStr = timestampStr.replace(/(\d{4}-\d{2}-\d{2}T\d{2})-(\d{2})-(\d{2})/, '$1:$2:$3');
+          const dateParsed = Date.parse(isoStr);
+          if (!isNaN(dateParsed)) {
+            return dateParsed;
+          }
+        }
+        // Fallback: try to parse the entire ID as a date
+        const dateParsed = Date.parse(photo.id);
+        if (!isNaN(dateParsed)) {
+          return dateParsed;
+        }
+        // Last resort: use string comparison (newer IDs are lexicographically larger)
+        // Convert to a numeric value for comparison
+        return photo.id.length * 1000000 + (photo.id.charCodeAt(0) || 0);
+      }
+      // If ID is a number, use it directly
+      if (typeof photo.id === 'number') {
+        return photo.id;
+      }
+      return 0;
+    }
+    
+    function sortPhotos(photos, sortOrder) {
+      const sorted = [...photos];
+      sorted.sort((a, b) => {
+        const timestampA = getPhotoTimestamp(a);
+        const timestampB = getPhotoTimestamp(b);
+        
+        if (sortOrder === 'latest') {
+          // Latest first: higher timestamp first
+          return timestampB - timestampA;
+        } else {
+          // Oldest first: lower timestamp first
+          return timestampA - timestampB;
+        }
+      });
+      return sorted;
+    }
+    
+    function applySort() {
+      const sortSelect = document.getElementById('sortSelect');
+      currentSort = sortSelect.value;
+      displayPhotos();
+    }
+    
+    function displayPhotos() {
+      const resultsDiv = document.getElementById('results');
+      const currentView = resultsDiv.dataset.view || 'grid';
+      
+      // Sort photos before displaying
+      const sortedPhotos = sortPhotos(allPhotos, currentSort);
+      
+      if (currentView === 'grid') {
+        displayGridView(sortedPhotos);
+      } else {
+        displayTableView(sortedPhotos);
+      }
+    }
+    
+    function showGridView() {
+      document.getElementById('results').dataset.view = 'grid';
+      document.getElementById('gridViewBtn').style.background = '#4be0a8';
+      document.getElementById('tableViewBtn').style.background = '#555';
+      displayGridView();
+    }
+    
+    function showTableView() {
+      document.getElementById('results').dataset.view = 'table';
+      document.getElementById('tableViewBtn').style.background = '#4be0a8';
+      document.getElementById('gridViewBtn').style.background = '#555';
+      displayTableView();
+    }
+    
+    function displayGridView(photosToDisplay = null) {
+      const resultsDiv = document.getElementById('results');
+      const photos = photosToDisplay || allPhotos;
+      
+      let html = '<div class="photo-grid">';
+      
+      photos.forEach((photo, index) => {
+        // Find original index in allPhotos for download function
+        const originalIndex = allPhotos.findIndex(p => p.id === photo.id);
+        const scan = findMatchingScan(photo);
+        const matchStatus = scan ? 'matched' : 'unmatched';
+        const matchInfo = scan ? `<div class="photo-info matched">✓ Matched: ${scan.storeName || 'Unknown'}</div>` : '<div class="photo-info unmatched">⚠ No matching scan</div>';
+        
+        // Create object URL for preview
+        const photoUrl = URL.createObjectURL(photo.blob);
+        
+        html += `
+          <div class="photo-card">
+            <img src="${photoUrl}" alt="Photo" class="photo-preview" onload="URL.revokeObjectURL(this.src)">
+            <div class="photo-id">ID: ${photo.id}</div>
+            <div class="photo-filename">${photo.filename || 'No filename'}</div>
+            <div class="photo-size">${photo.sizeInMB} MB</div>
+            ${matchInfo}
+            <div class="photo-actions">
+              <button class="btn-small" onclick="downloadPhoto(${originalIndex})">Download</button>
+              ${scan ? `<button class="btn-small btn-secondary" onclick="viewScan('${scan.entryId || scan.id}')">View Scan</button>` : ''}
+            </div>
+          </div>
+        `;
+      });
+      
+      html += '</div>';
+      resultsDiv.innerHTML = html;
+    }
+    
+    function displayTableView(photosToDisplay = null) {
+      const resultsDiv = document.getElementById('results');
+      const photos = photosToDisplay || allPhotos;
+      
+      let html = '<table>';
+      html += '<tr><th>Preview</th><th>Photo ID</th><th>Filename</th><th>Size</th><th>Match Status</th><th>Actions</th></tr>';
+      
+      photos.forEach((photo, index) => {
+        // Find original index in allPhotos for download function
+        const originalIndex = allPhotos.findIndex(p => p.id === photo.id);
+        const scan = findMatchingScan(photo);
+        const matchStatus = scan ? `<span class="matched">✓ Matched: ${scan.storeName || 'Unknown'}</span>` : '<span class="unmatched">⚠ Orphaned</span>';
+        const photoUrl = URL.createObjectURL(photo.blob);
+        
+        html += `
+          <tr>
+            <td><img src="${photoUrl}" style="width: 100px; height: 100px; object-fit: contain;" onload="URL.revokeObjectURL(this.src)"></td>
+            <td class="photo-id">${photo.id}</td>
+            <td class="photo-filename">${photo.filename || 'No filename'}</td>
+            <td>${photo.sizeInMB} MB</td>
+            <td>${matchStatus}</td>
+            <td>
+              <button class="btn-small" onclick="downloadPhoto(${originalIndex})">Download</button>
+              ${scan ? `<button class="btn-small btn-secondary" onclick="viewScan('${scan.entryId || scan.id}')">View</button>` : ''}
+            </td>
+          </tr>
+        `;
+      });
+      
+      html += '</table>';
+      resultsDiv.innerHTML = html;
+    }
+    
+    function downloadPhoto(index) {
+      const photo = allPhotos[index];
+      if (!photo || !photo.blob) {
+        alert('Photo data not available');
+        return;
+      }
+      
+      const url = URL.createObjectURL(photo.blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = photo.filename || `photo_${photo.id}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+    }
+    
+    async function downloadAll() {
+      if (allPhotos.length === 0) {
+        alert('No photos to download');
+        return;
+      }
+      
+      if (!confirm(`Download all ${allPhotos.length} photos? This may take a while.`)) {
+        return;
+      }
+      
+      const btn = document.getElementById('downloadAllBtn');
+      const originalText = btn.textContent;
+      btn.textContent = '⏳ Downloading...';
+      btn.disabled = true;
+      
+      try {
+        for (let i = 0; i < allPhotos.length; i++) {
+          downloadPhoto(i);
+          // Small delay to prevent browser blocking
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+        showStatus(`✅ Downloaded ${allPhotos.length} photos`, 'info');
+      } catch (error) {
+        showStatus('Error downloading photos: ' + error.message, 'error');
+      } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+      }
+    }
+    
+    function matchToScans() {
+      const unmatched = allPhotos.filter(p => !findMatchingScan(p));
+      
+      if (unmatched.length === 0) {
+        alert('All photos are already matched to scans!');
+        return;
+      }
+      
+      let matched = 0;
+      unmatched.forEach(photo => {
+        const entryId = extractEntryIdFromFilename(photo.filename);
+        if (entryId) {
+          const scan = scans.find(s => s.entryId === entryId);
+          if (scan && !scan.photoId) {
+            // Update scan with photoId
+            scan.photoId = photo.id;
+            scan.photoFilename = photo.filename;
+            matched++;
+          }
+        }
+      });
+      
+      if (matched > 0) {
+        // Save updated scans
+        try {
+          localStorage.setItem('scans', JSON.stringify(scans));
+          showStatus(`✅ Matched ${matched} photos to scans and saved!`, 'info');
+          displayStats();
+          displayPhotos();
+        } catch (error) {
+          showStatus('Matched photos but failed to save: ' + error.message, 'error');
+        }
+      } else {
+        alert('Could not match any photos. EntryIds may not match.');
+      }
+    }
+    
+    function viewScan(entryIdOrId) {
+      const scan = scans.find(s => s.entryId === entryIdOrId || s.id === entryIdOrId);
+      if (scan) {
+        alert(`Scan Details:\n\nStore: ${scan.storeName || 'Unknown'}\nAddress: ${scan.address || 'Unknown'}\nEntry ID: ${scan.entryId || 'Unknown'}\nTimestamp: ${scan.timestamp || 'Unknown'}`);
+      } else {
+        alert('Scan not found');
+      }
+    }
+    
+    function exportReport() {
+      const report = {
+        timestamp: new Date().toISOString(),
+        totalPhotos: allPhotos.length,
+        photos: allPhotos.map(p => {
+          const scan = findMatchingScan(p);
+          return {
+            photoId: p.id,
+            filename: p.filename,
+            sizeInMB: p.sizeInMB,
+            matched: !!scan,
+            scanEntryId: scan?.entryId || null,
+            scanStoreName: scan?.storeName || null
+          };
+        }),
+        summary: {
+          total: allPhotos.length,
+          matched: allPhotos.filter(p => findMatchingScan(p)).length,
+          orphaned: allPhotos.filter(p => !findMatchingScan(p)).length
+        }
+      };
+      
+      const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `indexeddb-photos-report-${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      showStatus('✅ Report exported!', 'info');
+    }
+    
+    function showStatus(message, type) {
+      const statusDiv = document.getElementById('status');
+      statusDiv.className = type || 'info';
+      statusDiv.textContent = message;
+    }
+    
+    // Initialize view buttons
+    window.addEventListener('load', () => {
+      document.getElementById('gridViewBtn').style.background = '#4be0a8';
+      document.getElementById('results').dataset.view = 'grid';
+    });
+  </script>
+</body>
+</html>

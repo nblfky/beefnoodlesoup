@@ -1,0 +1,506 @@
+/* ELO Tracker Styles */
+
+.elo-password-error {
+  color: #ef4444;
+  font-size: 13px;
+  margin-top: -12px;
+  margin-bottom: 12px;
+  padding: 8px;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 6px;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.elo-password-error.hidden {
+  display: none;
+}
+
+.elo-tracker-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  min-width: 40px;
+  flex-shrink: 0;
+  max-width: 40px;
+}
+
+@media (max-width: 480px) {
+  .elo-tracker-btn {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    max-width: 36px;
+  }
+  
+  .elo-tracker-btn .settings-icon {
+    font-size: 16px;
+  }
+}
+
+.elo-tracker-btn .settings-icon {
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.elo-tracker-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(75, 224, 168, 0.35);
+  transform: translateY(-2px);
+}
+
+.elo-tracker-container {
+  padding: 20px;
+  max-width: 600px;
+  margin: 0 auto;
+  overflow-y: auto;
+  height: calc(100vh - 70px);
+}
+
+.elo-section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--primary);
+}
+
+/* Leaderboard Styles */
+.elo-leaderboard-section {
+  margin-bottom: 32px;
+}
+
+.elo-leaderboard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.elo-leaderboard-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-small);
+  transition: all 0.2s ease;
+}
+
+.elo-leaderboard-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--primary);
+  transform: translateX(4px);
+}
+
+.elo-rank {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--primary);
+  min-width: 40px;
+  text-align: center;
+}
+
+.elo-rank.gold {
+  color: #ffd700;
+}
+
+.elo-rank.silver {
+  color: #c0c0c0;
+}
+
+.elo-rank.bronze {
+  color: #cd7f32;
+}
+
+.elo-player-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.elo-player-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.elo-player-stats {
+  font-size: 12px;
+  color: var(--text-secondary);
+  display: flex;
+  gap: 12px;
+}
+
+.elo-score {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--primary);
+  min-width: 80px;
+  text-align: right;
+}
+
+.elo-score-change {
+  font-size: 12px;
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+.elo-score-change.positive {
+  color: #22c55e;
+}
+
+.elo-score-change.negative {
+  color: #ef4444;
+}
+
+/* Match Input Styles */
+.elo-match-section {
+  margin-bottom: 32px;
+}
+
+.elo-match-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.elo-player-selection {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.elo-player-card {
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 2px solid var(--border);
+  border-radius: var(--border-radius-small);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.elo-player-card:hover {
+  border-color: var(--primary);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.elo-player-card.selected {
+  border-color: var(--primary);
+  background: rgba(75, 224, 168, 0.15);
+}
+
+.elo-player-card.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.elo-player-card-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.elo-team-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.elo-team {
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 2px solid var(--border);
+  border-radius: var(--border-radius-small);
+}
+
+.elo-team-header {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.elo-team-players {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.elo-team-player {
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.elo-randomize-btn {
+  width: 100%;
+  padding: 10px;
+  background: rgba(75, 224, 168, 0.1);
+  border: 1px solid rgba(75, 224, 168, 0.3);
+  border-radius: var(--border-radius-small);
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 8px;
+}
+
+.elo-randomize-btn:hover {
+  background: rgba(75, 224, 168, 0.2);
+  border-color: var(--primary);
+}
+
+.elo-generate-teams-btn {
+  width: 100%;
+  padding: 14px;
+  background: rgba(75, 224, 168, 0.15);
+  border: 2px solid rgba(75, 224, 168, 0.4);
+  border-radius: var(--border-radius-small);
+  color: var(--primary);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.elo-generate-teams-btn:hover:not(:disabled) {
+  background: rgba(75, 224, 168, 0.25);
+  border-color: var(--primary);
+  transform: translateY(-2px);
+}
+
+.elo-generate-teams-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.elo-generate-teams-icon {
+  font-size: 18px;
+}
+
+.elo-loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(75, 224, 168, 0.3);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Match History Styles */
+.elo-history-section {
+  margin-bottom: 20px;
+}
+
+.elo-match-history {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.elo-match-item {
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-small);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+
+.elo-match-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--primary);
+}
+
+.elo-match-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.elo-match-type {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--primary);
+}
+
+.elo-match-date {
+  font-size: 11px;
+}
+
+.elo-match-teams {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.elo-match-team {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.elo-match-team.winner {
+  background: rgba(75, 224, 168, 0.1);
+  border: 1px solid rgba(75, 224, 168, 0.3);
+}
+
+.elo-match-team-header {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.elo-match-team-players {
+  font-size: 14px;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.elo-match-vs {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  padding: 8px;
+  align-self: center;
+}
+
+.elo-match-scores {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+.elo-match-score-change {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+}
+
+.elo-match-score-change.positive {
+  color: #22c55e;
+}
+
+.elo-match-score-change.negative {
+  color: #ef4444;
+}
+
+.elo-match-winner {
+  font-size: 13px;
+  color: var(--text-secondary);
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.elo-match-winner strong {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* Loading State */
+.elo-loading {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.elo-loading::after {
+  content: '...';
+  animation: dots 1.5s steps(4, end) infinite;
+}
+
+@keyframes dots {
+  0%, 20% { content: '.'; }
+  40% { content: '..'; }
+  60%, 100% { content: '...'; }
+}
+
+/* Empty State */
+.elo-empty {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+/* Mobile Responsive */
+@media (max-width: 480px) {
+  .elo-tracker-container {
+    padding: 16px;
+  }
+
+  .elo-player-selection {
+    grid-template-columns: 1fr;
+  }
+
+  .elo-match-teams {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .elo-match-vs {
+    transform: rotate(90deg);
+    padding: 8px 0;
+  }
+
+  .elo-leaderboard-item {
+    padding: 12px;
+  }
+
+  .elo-rank {
+    min-width: 32px;
+    font-size: 18px;
+  }
+
+  .elo-score {
+    font-size: 20px;
+    min-width: 60px;
+  }
+}

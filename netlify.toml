@@ -1,6 +1,13 @@
+functionsDirectory = "C:\\Users\\fikri.nabil\\Desktop\\bnsV revamp\\netlify\\functions"
+functionsDirectoryOrigin = "config-v1"
+plugins = []
+headers = []
+redirects = []
+
 [build]
-publish = "."
-functions = "netlify/functions"
+publish = "C:\\Users\\fikri.nabil\\Desktop\\bnsV revamp"
+publishOrigin = "config"
+functions = "C:\\Users\\fikri.nabil\\Desktop\\bnsV revamp\\netlify\\functions"
 
   [build.environment]
 

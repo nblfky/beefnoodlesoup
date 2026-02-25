@@ -1,2 +1,37 @@
 # Local Netlify folder
 .netlify
+
+# Dependencies
+node_modules/
+package-lock.json
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temporary files
+*.tmp
+*.temp
+
+# Test/Sample data
+Store Photos/
+
+# Build outputs (if any)
+dist/
+build/
+
+# Large point cloud files
+basement-map/point_cloud/*.laz
+*.laz

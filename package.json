@@ -1,0 +1,10 @@
+{
+  "name": "bnsvision",
+  "version": "2.1.0",
+  "description": "bnsVision - AI-powered storefront scanning app",
+  "type": "module",
+  "dependencies": {
+    "google-auth-library": "^9.0.0",
+    "googleapis": "^130.0.0"
+  }
+}
