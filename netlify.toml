@@ -1,6 +1,28 @@
 [build]
-  publish = "."
-  functions = "netlify/functions"
+publish = "."
+functions = "netlify/functions"
+
+  [build.environment]
+
+  [build.processing]
+
+    [build.processing.css]
+
+    [build.processing.html]
+
+    [build.processing.images]
+
+    [build.processing.js]
+
+  [build.services]
+
+[dev]
+edge_functions = []
 
 [functions]
+
+  [functions."*"]
+  included_files = [
+    "netlify/functions/**"
+  ]
   node_bundler = "esbuild"

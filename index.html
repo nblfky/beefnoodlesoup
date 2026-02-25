@@ -5,6 +5,7 @@
   <title>bnsVision</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#00b14f">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="bnsVision">
@@ -17,35 +18,1115 @@
   <!-- Splash Screen -->
   <div id="splashScreen" class="splash-screen active">
     <div class="splash-content">
-      <img src="bns_logo.png" alt="beefnoodlesoup logo" class="splash-logo">
+      <img src="assets/images/bns_logo.png" alt="beefnoodlesoup logo" class="splash-logo">
       <div class="splash-brand">beefnoodlesoup</div>
     </div>
   </div>
 
   <div id="appShell">
-    <!-- Home Screen -->
+    <!-- Home Screen - Project Selection -->
     <section id="homeScreen" class="screen">
-      <div class="home-hero">
-        <div class="home-logo">
-          <img src="bns_logo.png" alt="beefnoodlesoup logo">
+      <div class="vision-hub-header">
+        <div class="vision-hub-brand">
+          <img src="assets/images/bns_logo.png" alt="beefnoodlesoup logo" class="vision-hub-logo">
+          <div class="vision-hub-title">
+            <span class="vision-hub-name">beefnoodlesoup</span>
+            <span class="vision-hub-suffix">Vision</span>
         </div>
-        <div class="home-brand">beefnoodlesoup</div>
-        <p class="home-tagline">where every idea finds its broth</p>
       </div>
-      <div class="home-options">
-        <button id="visionEntry" class="home-option primary">
-          <span class="option-title">Vision</span>
-          <span class="option-subtitle">stirring data into discovery</span>
+        <p class="vision-hub-tagline">stirring data into discovery</p>
+      </div>
+
+      <!-- Active Project Card (shown when a project is active) -->
+      <div id="activeProjectCard" class="active-project-card hidden">
+        <div class="active-project-header">
+          <span class="active-project-label">Current Project</span>
+          <button id="closeProjectBtn" class="icon-btn-small" title="Close project">✕</button>
+        </div>
+        <div class="active-project-info">
+          <span id="activeProjectName" class="active-project-name">-</span>
+          <span id="activeProjectLocation" class="active-project-location">-</span>
+        </div>
+        <button id="continueProjectBtn" class="btn-continue">Continue →</button>
+      </div>
+
+      <div class="vision-hub-grid">
+        <button id="createProjectBtn" class="vision-hub-tile primary">
+          <div class="tile-icon">➕</div>
+          <div class="tile-info">
+            <span class="tile-title">Create New Project</span>
+            <span class="tile-desc">Start a new Vision project</span>
+          </div>
         </button>
-        <button id="vanguardOption" class="home-option disabled" aria-disabled="true">
-          <span class="option-title">Vanguard</span>
-          <span class="option-subtitle">Coming soon...</span>
+        
+        <button id="viewProjectsBtn" class="vision-hub-tile">
+          <div class="tile-icon">📁</div>
+          <div class="tile-info">
+            <span class="tile-title">See All Projects</span>
+            <span class="tile-desc">View and manage existing projects</span>
+          </div>
+        </button>
+        
+        <button id="feedbackBtnHome" class="vision-hub-tile">
+          <div class="tile-icon">💬</div>
+          <div class="tile-info">
+            <span class="tile-title">Send Feedback</span>
+            <span class="tile-desc">Share your thoughts and suggestions</span>
+      </div>
+        </button>
+        
+        <button id="visionaryBtn" class="vision-hub-tile">
+          <div class="tile-icon">🗺️</div>
+          <div class="tile-info">
+            <span class="tile-title">Visionary - Singapore</span>
+            <span class="tile-desc">Vision everything</span>
+          </div>
         </button>
       </div>
+
+      <div class="vision-hub-secondary">
+        <button id="eloTrackerBtn" class="vision-hub-link elo-tracker-btn" title="ELO Score Tracker">
+          <span class="settings-icon">⚙️</span>
+        </button>
+        <button id="guideTile" class="vision-hub-link">
+          <span>📖</span> User Guide
+        </button>
+        <button id="recoveryToolBtn" class="vision-hub-link">
+          <span>🔧</span> Recovery Tool
+        </button>
+        <button id="indexedDBBrowserBtn" class="vision-hub-link">
+          <span>📸</span> Image Database
+        </button>
+      </div>
+
       <footer class="home-footer">
         <button id="versionHistoryBtn" class="link-btn" type="button">Version history</button>
-        <span class="version-label">Version: <span id="appVersion">2.0.0</span></span>
+        <span class="version-label">Version: <span id="appVersion">2.4.2</span></span>
       </footer>
+    </section>
+
+    <!-- Projects List Screen -->
+    <section id="projectsListScreen" class="screen">
+      <div class="vision-app">
+        <div class="vision-topbar">
+          <button id="projectsListBackBtn" class="icon-btn" title="Back">⟵</button>
+          <h2 class="view-title">All Projects</h2>
+        </div>
+        <div class="projects-list-container">
+          <!-- Folder/Group Selector -->
+          <div class="folder-selector-wrapper">
+            <div id="folderSelector" class="folder-selector">
+              <button id="allFoldersBtn" class="folder-tab active" data-folder="all">All</button>
+              <!-- Folders will be dynamically added here -->
+            </div>
+            <div class="folder-actions-row">
+              <button id="addFolderBtn" class="btn-add-folder" title="Create Folder">+ 📁</button>
+              <button id="selectModeBtn" class="btn-select-mode" title="Select Projects">✓ Select</button>
+            </div>
+          </div>
+          
+          <!-- Selection Mode Toolbar -->
+          <div id="selectionToolbar" class="selection-toolbar hidden">
+            <span id="selectedCount" class="selected-count">0 selected</span>
+            <button id="selectAllBtn" class="btn-select-action">Select All</button>
+            <button id="deselectAllBtn" class="btn-select-action">Deselect All</button>
+            <button id="moveSelectedBtn" class="btn-select-action btn-primary">Move Selected to Folder</button>
+            <button id="deleteSelectedBtn" class="btn-select-action btn-danger">Delete Selected</button>
+            <button id="cancelSelectBtn" class="btn-select-action">Cancel</button>
+          </div>
+          
+          <div id="projectsList" class="projects-list">
+            <!-- Projects will be rendered here -->
+        </div>
+          <div id="noProjectsMessage" class="no-projects-message hidden">
+            <div class="empty-icon">📁</div>
+            <p>No projects yet</p>
+            <button id="createFirstProjectBtn" class="btn">Create your first project</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Rename Project Modal -->
+    <div id="renameProjectModal" class="modal-overlay hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Rename Project</h3>
+          <button id="closeRenameModal" class="modal-close">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="renameProjectInput">Project Name</label>
+            <input type="text" id="renameProjectInput" placeholder="Enter new project name">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="cancelRenameBtn" class="btn btn-secondary">Cancel</button>
+          <button id="saveRenameBtn" class="btn btn-primary">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Create Folder Modal -->
+    <div id="createFolderModal" class="modal-overlay hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Create Folder</h3>
+          <button id="closeFolderModal" class="modal-close">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="folderNameInput">Folder Name</label>
+            <input type="text" id="folderNameInput" placeholder="e.g., Marina Bay, Orchard Road">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="cancelFolderBtn" class="btn btn-secondary">Cancel</button>
+          <button id="saveFolderBtn" class="btn btn-primary">Create</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Move to Folder Modal -->
+    <div id="moveToFolderModal" class="modal-overlay hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Move to Folder</h3>
+          <button id="closeMoveToFolderModal" class="modal-close">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="moveToFolderSelect">Select Folder</label>
+            <select id="moveToFolderSelect">
+              <option value="">No Folder (Remove from folder)</option>
+              <!-- Folders will be populated here -->
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="cancelMoveToFolderBtn" class="btn btn-secondary">Cancel</button>
+          <button id="saveMoveToFolderBtn" class="btn btn-primary">Move</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Project Type Selection Screen -->
+    <section id="projectTypeScreen" class="screen">
+      <div class="vision-app">
+        <div class="vision-topbar">
+          <button id="projectTypeBackBtn" class="icon-btn" title="Back">⟵</button>
+          <h2 class="view-title">Project Type</h2>
+        </div>
+        <div class="project-type-container">
+          <p class="project-type-subtitle">Select the type of project you're working on</p>
+          <div class="project-type-grid">
+            <button id="benchmarkingTypeBtn" class="project-type-card selected" data-project-type="Onground Benchmarking">
+              <div class="project-type-icon">🏪</div>
+              <span class="project-type-name">Onground Benchmarking</span>
+              <span class="project-type-desc">Field data collection for storefronts and POIs</span>
+            </button>
+            <button id="mapCityLiteTypeBtn" class="project-type-card" data-project-type="Map Your City Lite">
+              <div class="project-type-icon">🗺️</div>
+              <span class="project-type-name">Map Your City Lite</span>
+              <span class="project-type-desc">Visionise your world</span>
+            </button>
+          </div>
+          <button id="projectTypeNextBtn" class="btn btn-primary btn-full">Next →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Project Type Screen (for Onground Benchmarking) -->
+    <section id="buildingSelectionScreen" class="screen">
+      <div class="vision-app">
+        <div class="vision-topbar">
+          <button id="buildingSelectionBackBtn" class="icon-btn" title="Back">⟵</button>
+          <h2 class="view-title">Project Type</h2>
+        </div>
+        <div class="project-type-container">
+          <p class="project-type-subtitle">How would you like to set up this project?</p>
+          <div class="project-type-grid">
+            <button id="createNewTabBtn" class="project-type-card">
+              <div class="project-type-icon">➕</div>
+              <span class="project-type-name">Create a new tab</span>
+              <span class="project-type-desc">Set up a custom location for Residential or Commercial scanning</span>
+            </button>
+            <button id="selectExistingBuildingBtn" class="project-type-card">
+              <div class="project-type-icon">🏢</div>
+              <span class="project-type-name">Select from existing building - Singapore</span>
+              <span class="project-type-desc">Choose from pre-configured locations with auto-filled details</span>
+            </button>
+            <button id="condoScanBtn" class="project-type-card">
+              <div class="project-type-icon">🏘️</div>
+              <span class="project-type-name">Scan with OneMap - Singapore</span>
+              <span class="project-type-desc">Scan and search a condo, hotel, school, other buildings</span>
+            </button>
+            <button id="isolatedBulkUploadBtn" class="project-type-card">
+              <div class="project-type-icon">📤</div>
+              <span class="project-type-name">Bulk Upload - WIP</span>
+              <span class="project-type-desc">Upload multiple photos with custom project settings</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Map Selection Screen -->
+    <section id="mapSelectionScreen" class="screen">
+      <div class="vision-app">
+        <div class="vision-topbar">
+          <button id="mapSelectionBackBtn" class="icon-btn" title="Back">⟵</button>
+          <h2 class="view-title">Select Map</h2>
+        </div>
+        <div class="project-type-container">
+          <p class="project-type-subtitle">Choose a map to view</p>
+          <div class="project-type-grid">
+            <button id="basementMapBtn" class="project-type-card">
+              <div class="project-type-icon">🏢</div>
+              <span class="project-type-name">Basement Carpark LiDAR Map</span>
+              <span class="project-type-desc">Polygonised sites (GeoJSON)</span>
+            </button>
+            <button id="avRoutingMapBtn" class="project-type-card">
+              <div class="project-type-icon">🚗</div>
+              <span class="project-type-name">AV Routing Map</span>
+              <span class="project-type-desc">Road network analysis for autonomous vehicles</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Isolated Bulk Upload Settings Screen -->
+    <section id="isolatedBulkUploadSettingsScreen" class="screen">
+      <div class="vision-app">
+        <div class="vision-topbar">
+          <button id="isolatedBulkUploadBackBtn" class="icon-btn" title="Back">⟵</button>
+          <h2 class="view-title">Bulk Upload Settings</h2>
+        </div>
+        <div class="bulk-upload-settings-container">
+          <form id="isolatedBulkUploadForm" class="bulk-upload-settings-form">
+            <div class="form-section">
+              <h3 class="form-section-title">📋 Project Settings</h3>
+              
+              <div class="form-group">
+                <label for="isolatedBulkTabSelect">Google Sheets Tab</label>
+                <div class="tab-select-wrapper">
+                  <select id="isolatedBulkTabSelect">
+                    <option value="">Select existing tab...</option>
+                    <!-- Tabs will be populated dynamically -->
+                  </select>
+                  <span class="or-divider">or</span>
+                  <input type="text" id="isolatedBulkNewTabInput" placeholder="Create new tab name">
+                </div>
+              </div>
+              
+              <div class="form-group">
+                <label for="isolatedBulkEmail">Email</label>
+                <select id="isolatedBulkEmail" required>
+                  <option value="">Select an email...</option>
+                  <option value="fikri.nabil@grabtaxi.com">fikri.nabil@grabtaxi.com</option>
+                  <option value="felicia.jow@grabtaxi.com">felicia.jow@grabtaxi.com</option>
+                  <option value="finn.tan@grabtaxi.com">finn.tan@grabtaxi.com</option>
+                  <option value="jiaxian.phua@grabtaxi.com">jiaxian.phua@grabtaxi.com</option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label for="isolatedBulkDate">Date</label>
+                <input type="date" id="isolatedBulkDate" required>
+              </div>
+              
+              <div class="form-group">
+                <label for="isolatedBulkType">Type</label>
+                <select id="isolatedBulkType" required>
+                  <option value="">Select type...</option>
+                  <option value="Residential">Residential</option>
+                  <option value="Commercial">Commercial</option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label for="isolatedBulkEnvironment">Environment</label>
+                <select id="isolatedBulkEnvironment" required>
+                  <option value="">Select environment...</option>
+                  <option value="Indoor">Indoor</option>
+                  <option value="Outdoor">Outdoor</option>
+                </select>
+              </div>
+              
+              <!-- Residential-specific fields -->
+              <div id="isolatedBulkResidentialFields" class="form-group hidden">
+                <label for="isolatedBulkStreet">Street Name</label>
+                <input type="text" id="isolatedBulkStreet" placeholder="e.g., Onan Rd, Emerald Hill Road">
+                <span class="form-hint">AI will extract house numbers from photos and combine with this street name</span>
+              </div>
+              
+              <!-- Commercial-specific fields -->
+              <div id="isolatedBulkCommercialFields" class="form-group hidden">
+                <span class="form-hint">Commercial bulk upload will work the same as existing bulk upload feature</span>
+              </div>
+            </div>
+            
+            <div class="form-actions">
+              <button type="button" id="isolatedBulkCancelBtn" class="btn btn-secondary">Cancel</button>
+              <button type="submit" id="isolatedBulkNextBtn" class="btn btn-primary">Next: Upload Photos →</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- Isolated Bulk Upload Screen -->
+    <section id="isolatedBulkUploadScreen" class="screen">
+      <div class="vision-app">
+        <div class="vision-topbar">
+          <button id="isolatedBulkUploadScreenBackBtn" class="icon-btn" title="Back">⟵</button>
+          <h2 class="view-title">Bulk Upload</h2>
+        </div>
+        <div class="isolated-bulk-upload-container">
+          <div class="bulk-upload-info">
+            <div class="bulk-upload-info-item">
+              <span class="info-label">Tab:</span>
+              <span id="isolatedBulkCurrentTab" class="info-value">-</span>
+            </div>
+            <div class="bulk-upload-info-item">
+              <span class="info-label">Type:</span>
+              <span id="isolatedBulkCurrentType" class="info-value">-</span>
+            </div>
+            <div class="bulk-upload-info-item">
+              <span class="info-label">Street:</span>
+              <span id="isolatedBulkCurrentStreet" class="info-value">-</span>
+            </div>
+          </div>
+          
+          <div class="bulk-upload-area">
+            <input type="file" id="isolatedBulkImageInput" multiple accept="image/*" style="display: none;">
+            <button id="isolatedBulkSelectBtn" class="btn btn-primary btn-large">
+              📷 Select Photos
+            </button>
+            <p class="bulk-upload-hint">Select multiple photos to upload</p>
+          </div>
+          
+          <div id="isolatedBulkPreviewArea" class="bulk-upload-preview hidden">
+            <div class="bulk-upload-preview-header">
+              <h3>Selected Photos</h3>
+              <span id="isolatedBulkPhotoCount" class="photo-count">0 photos</span>
+            </div>
+            <div id="isolatedBulkPhotoGrid" class="bulk-upload-photo-grid">
+              <!-- Photos will be displayed here -->
+            </div>
+            <div class="bulk-upload-actions">
+              <button id="isolatedBulkClearBtn" class="btn btn-secondary">Clear All</button>
+              <button id="isolatedBulkProcessBtn" class="btn btn-primary">Process & Upload</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Isolated Bulk Upload Success Screen -->
+    <section id="isolatedBulkUploadSuccessScreen" class="screen">
+      <div class="vision-app">
+        <div class="vision-topbar">
+          <button id="isolatedBulkSuccessBackBtn" class="icon-btn" title="Back">⟵</button>
+          <h2 class="view-title">Upload Complete</h2>
+        </div>
+        <div class="bulk-upload-success-container">
+          <div class="success-icon">✅</div>
+          <h3>Bulk Upload Successful!</h3>
+          <div class="success-stats">
+            <div class="success-stat-item">
+              <span class="stat-value" id="isolatedBulkSuccessCount">0</span>
+              <span class="stat-label">Photos Processed</span>
+            </div>
+            <div class="success-stat-item">
+              <span class="stat-value" id="isolatedBulkSuccessEntries">0</span>
+              <span class="stat-label">Entries Created</span>
+            </div>
+          </div>
+          <div class="success-actions">
+            <button id="isolatedBulkViewDataBtn" class="btn btn-primary">View Data</button>
+            <button id="isolatedBulkUploadMoreBtn" class="btn btn-secondary">Upload More</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Isolated Bulk Upload Data Screen -->
+    <section id="isolatedBulkUploadDataScreen" class="screen">
+      <div class="vision-app">
+        <div class="vision-topbar">
+          <button id="isolatedBulkDataBackBtn" class="icon-btn" title="Back">⟵</button>
+          <h2 class="view-title">Bulk Upload History</h2>
+        </div>
+        <div class="bulk-upload-data-container">
+          <div id="isolatedBulkUploadList" class="bulk-upload-list">
+            <!-- Bulk upload sessions will be listed here -->
+          </div>
+          <div id="isolatedBulkNoData" class="no-data-message hidden">
+            <div class="empty-icon">📤</div>
+            <p>No bulk uploads yet</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Condo Scanner Screen -->
+    <section id="condoScannerScreen" class="screen">
+      <div class="vision-app">
+        <div class="vision-topbar">
+          <button id="condoScannerBackBtn" class="icon-btn" title="Back">⟵</button>
+          <h2 class="view-title">Condo Scanner</h2>
+        </div>
+        <div class="condo-scanner-container">
+          <!-- Photo Capture Section -->
+          <div id="condoCaptureSection" class="condo-capture-section">
+            <div class="condo-capture-header">
+              <div class="condo-capture-icon">📸</div>
+              <h3>Capture Condo Name</h3>
+              <p>Take a photo of the condo's name sign. AI will detect the name and find all blocks.</p>
+            </div>
+            
+            <!-- Camera Preview -->
+            <div id="condoCameraContainer" class="condo-camera-container">
+              <video id="condoCameraPreview" autoplay playsinline></video>
+              <canvas id="condoCaptureCanvas" style="display: none;"></canvas>
+              <div id="condoCapturedImage" class="condo-captured-image hidden">
+                <img id="condoCapturedImg" src="" alt="Captured condo name">
+                <button id="condoRetakeBtn" class="btn-retake">↻ Retake</button>
+              </div>
+            </div>
+            
+            <!-- Camera Controls -->
+            <div class="condo-camera-controls">
+              <button id="condoCaptureBtn" class="btn btn-capture">
+                <span class="capture-icon">📷</span>
+                <span>Capture Photo</span>
+              </button>
+              <span class="or-divider">or</span>
+              <label for="condoUploadInput" class="btn btn-secondary btn-upload">
+                <span>📁 Upload Image</span>
+              </label>
+              <input type="file" id="condoUploadInput" accept="image/*" style="display: none;">
+            </div>
+            
+            <!-- AI Detection Button -->
+            <button id="condoDetectBtn" class="btn btn-primary btn-full hidden">
+              🤖 Detect Condo Name with AI
+            </button>
+          </div>
+
+          <!-- AI Processing State -->
+          <div id="condoProcessingSection" class="condo-processing-section hidden">
+            <div class="processing-animation">
+              <div class="processing-icon">🤖</div>
+              <div class="processing-spinner"></div>
+            </div>
+            <p id="condoProcessingText">Analyzing image...</p>
+          </div>
+
+          <!-- Results Section -->
+          <div id="condoResultsSection" class="condo-results-section hidden">
+            <!-- Parent POI Preview -->
+            <div class="condo-parent-section">
+              <div class="condo-parent-header">
+                <span class="parent-badge">Parent POI</span>
+                <span id="condoParentName" class="condo-parent-name">Condo Name</span>
+              </div>
+              <div class="condo-parent-photo">
+                <img id="condoParentPhoto" src="" alt="Condo photo">
+              </div>
+              <div class="condo-parent-address" id="condoParentAddress">
+                Address will be auto-filled from OneMap
+              </div>
+            </div>
+
+            <!-- Child POIs -->
+            <div class="condo-children-section">
+              <div class="condo-children-header">
+                <span class="children-badge">Child POIs</span>
+                <span id="condoBlockCount" class="condo-block-count">0 blocks</span>
+              </div>
+              <div id="condoBlocksList" class="condo-blocks-list">
+                <!-- Block items will be populated here -->
+              </div>
+            </div>
+
+            <!-- Map Preview -->
+            <div id="condoMapPreview" class="condo-map-preview"></div>
+
+            <!-- Save & Continue Button -->
+            <div class="condo-save-section">
+              <button id="condoSaveBtn" class="btn btn-primary btn-full">
+                ✓ Save to Condominium Tab & Scan Next
+              </button>
+            </div>
+          </div>
+
+          <!-- No Results Message -->
+          <div id="condoNoResults" class="condo-no-results hidden">
+            <div class="empty-icon">🏘️</div>
+            <p id="condoNoResultsText">No condo found</p>
+            <span class="form-hint">Try taking another photo or enter the name manually</span>
+            <div class="condo-manual-entry">
+              <input type="text" id="condoManualInput" placeholder="Enter condo name manually...">
+              <button id="condoManualSearchBtn" class="btn btn-primary">Search</button>
+            </div>
+            <button id="condoTryAgainBtn" class="btn btn-secondary">📸 Take Another Photo</button>
+          </div>
+
+          <!-- Scanned Condos Data -->
+          <div id="condoDataSection" class="condo-data-section hidden">
+            <div class="condo-data-header">
+              <h3>📋 Scanned Condos</h3>
+              <span id="condoDataCount" class="condo-data-count">0 condos</span>
+            </div>
+            <div id="condoDataList" class="condo-data-list">
+              <!-- Scanned condos will be listed here -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Project Settings Screen -->
+    <section id="projectSettingsScreen" class="screen">
+      <div class="vision-app">
+        <div class="vision-topbar">
+          <button id="projectSettingsBackBtn" class="icon-btn" title="Back">⟵</button>
+          <h2 class="view-title">Project Settings</h2>
+        </div>
+        <div class="project-settings-container">
+          <form id="projectSettingsForm" class="project-settings-form">
+            <div class="form-section">
+              <h3 class="form-section-title">📅 Project Details</h3>
+              
+              <div class="form-group">
+                <label for="projectDate">Date</label>
+                <input type="date" id="projectDate" required>
+              </div>
+              
+              <div class="form-group">
+                <label for="projectEmail">Email</label>
+                <select id="projectEmail">
+                  <option value="">Select an email...</option>
+                  <option value="fikri.nabil@grabtaxi.com">fikri.nabil@grabtaxi.com</option>
+                  <option value="felicia.jow@grabtaxi.com">felicia.jow@grabtaxi.com</option>
+                  <option value="finn.tan@grabtaxi.com">finn.tan@grabtaxi.com</option>
+                  <option value="jiaxian.phua@grabtaxi.com">jiaxian.phua@grabtaxi.com</option>
+                  <option value="ftt.charlie.ng@grabtaxi.com">ftt.charlie.ng@grabtaxi.com</option>
+                  <option value="ftt.huiping.ang@grabtaxi.com">ftt.huiping.ang@grabtaxi.com</option>
+            </select>
+              </div>
+              
+              <div class="form-group">
+                <label for="projectLocation">Location</label>
+                <select id="projectLocation" required>
+                  <option value="">Select a location...</option>
+                  <!-- Options populated by JS -->
+            </select>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h3 class="form-section-title">🏢 Environment</h3>
+              <div class="form-group">
+                <label for="projectEnvironment">Indoor/Outdoor</label>
+                <select id="projectEnvironment">
+                  <option value="Indoor">Indoor</option>
+                  <option value="Outdoor">Outdoor</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h3 class="form-section-title">📊 Sync Settings</h3>
+              <div class="settings-row">
+                <div class="setting-info">
+                  <span class="setting-label">Sync to Google Sheets</span>
+                  <span class="setting-desc">Data will sync to "<span id="sheetTabPreview">-</span>" tab</span>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="projectSyncEnabled" checked>
+                  <span class="toggle-slider"></span>
+          </label>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h3 class="form-section-title">📍 Default Address</h3>
+              <p class="form-section-desc">Set a default address for all scans in this project. If set, these values will override scan results.</p>
+              
+              <div class="form-row">
+                <div class="form-group half">
+                  <label for="defaultHouseNo">House No.</label>
+                  <input type="text" id="defaultHouseNo" placeholder="e.g., 3155">
+                </div>
+                <div class="form-group half">
+                  <label for="defaultPostcode">Postcode</label>
+                  <input type="text" id="defaultPostcode" placeholder="e.g., 129588">
+                </div>
+              </div>
+              
+              <div class="form-group">
+                <label for="defaultStreet">Street</label>
+                <input type="text" id="defaultStreet" placeholder="e.g., Commonwealth Ave W">
+              </div>
+
+              <div class="form-group">
+                <label for="defaultFloor">Floor</label>
+                <input type="text" id="defaultFloor" list="defaultFloorOptions" placeholder="Select or type floor (e.g., L1, B2)">
+                <datalist id="defaultFloorOptions">
+                  <option value="B4">B4</option>
+                  <option value="B3">B3</option>
+                  <option value="B2">B2</option>
+                  <option value="B1">B1</option>
+                  <option value="L1">L1</option>
+                  <option value="L2">L2</option>
+                  <option value="L3">L3</option>
+                  <option value="L4">L4</option>
+                  <option value="L5">L5</option>
+                  <option value="L6">L6</option>
+                  <option value="L7">L7</option>
+                  <option value="L8">L8</option>
+                  <option value="L9">L9</option>
+                  <option value="L10">L10</option>
+                  <option value="L11">L11</option>
+                  <option value="L12">L12</option>
+                  <option value="L13">L13</option>
+                  <option value="L14">L14</option>
+                  <option value="L15">L15</option>
+                  <option value="L16">L16</option>
+                  <option value="L17">L17</option>
+                  <option value="L18">L18</option>
+                  <option value="L19">L19</option>
+                  <option value="L20">L20</option>
+                </datalist>
+              </div>
+              
+              <div class="form-group">
+                <label for="defaultBuilding">Building</label>
+                <input type="text" id="defaultBuilding" placeholder="e.g., Clementi Mall">
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-full">Create Project →</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- Custom Tab Settings Screen (for Residential/Commercial) -->
+    <section id="customTabSettingsScreen" class="screen">
+      <div class="vision-app">
+        <div class="vision-topbar">
+          <button id="customTabSettingsBackBtn" class="icon-btn" title="Back">⟵</button>
+          <h2 class="view-title">New Tab Settings</h2>
+        </div>
+        <div class="project-settings-container">
+          <form id="customTabSettingsForm" class="project-settings-form">
+            <div class="form-section">
+              <h3 class="form-section-title">📋 Tab Details</h3>
+              
+              <div class="form-group">
+                <label for="customTabCountry">Country</label>
+                <select id="customTabCountry" required>
+                  <option value="Singapore">Singapore</option>
+                  <option value="Thailand">Thailand</option>
+                  <option value="Malaysia">Malaysia</option>
+                  <option value="Indonesia">Indonesia</option>
+                  <option value="Vietnam">Vietnam</option>
+                  <option value="Philippines">Philippines</option>
+                  <option value="Cambodia">Cambodia</option>
+                  <option value="Myanmar">Myanmar</option>
+                </select>
+                <span class="form-hint">Select the country for this project</span>
+              </div>
+              
+              <div class="form-group">
+                <label for="customTabName">Tab Name</label>
+                <input type="text" id="customTabName" list="tabNameOptions" placeholder="Type or select tab name..." required>
+                <datalist id="tabNameOptions">
+                  <!-- Tab names will be populated dynamically from Dashboard - Commercial column A -->
+                </datalist>
+                <span class="form-hint">This will be the Google Sheets tab name</span>
+              </div>
+              
+              <div class="form-group">
+                <label>Category</label>
+                <div class="category-toggle">
+                  <button type="button" id="categoryResidentialBtn" class="category-btn">🏠 Residential</button>
+                  <button type="button" id="categoryCommercialBtn" class="category-btn selected">🏪 Commercial</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h3 class="form-section-title">📅 Project Details</h3>
+              
+              <div class="form-group">
+                <label for="customTabDate">Date</label>
+                <input type="date" id="customTabDate" required>
+              </div>
+              
+              <div class="form-group">
+                <label for="customTabEmail">Email</label>
+                <input type="email" id="customTabEmail" list="customTabEmailOptions" placeholder="Enter email address..." required>
+                <datalist id="customTabEmailOptions">
+                  <!-- Previously used emails will be populated dynamically -->
+                </datalist>
+                <span class="form-hint">Enter email address (will be saved for future use)</span>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h3 class="form-section-title">🏢 Environment</h3>
+              <div class="form-group">
+                <label for="customTabEnvironment">Indoor/Outdoor</label>
+                <select id="customTabEnvironment">
+                  <option value="Indoor">Indoor</option>
+                  <option value="Outdoor">Outdoor</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h3 class="form-section-title">📊 Sync Settings</h3>
+              <div class="settings-row">
+                <div class="setting-info">
+                  <span class="setting-label">Sync to Google Sheets</span>
+                  <span class="setting-desc">Data will sync to "<span id="customTabPreview">-</span>" tab</span>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="customTabSyncEnabled" checked>
+                  <span class="toggle-slider"></span>
+          </label>
+              </div>
+            </div>
+
+            <!-- Residential Fields -->
+            <div id="residentialFields" class="form-section hidden">
+              <h3 class="form-section-title">🏠 Residential Details</h3>
+              <p class="form-section-desc">Set the address details to duplicate for each house scan. The AI will detect the house number.</p>
+              
+              <div class="form-group">
+                <label for="residentialStreet">Street Name <span class="required">*</span></label>
+                <input type="text" id="residentialStreet" placeholder="e.g., Onan Road">
+                <span class="form-hint">This will be combined with house number (e.g., "5 Onan Road")</span>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group half">
+                  <label for="residentialBuilding">Building (Optional)</label>
+                  <input type="text" id="residentialBuilding" placeholder="e.g., Estate Name">
+                </div>
+                <div class="form-group half">
+                  <label for="residentialPostcode">Postcode (Optional)</label>
+                  <input type="text" id="residentialPostcode" placeholder="e.g., 428820">
+                </div>
+              </div>
+
+              
+              <div id="streetMapContainer" class="street-map-container hidden">
+                <div id="streetMapPreview" class="street-map-preview"></div>
+                <div id="streetMapLegend" class="street-map-legend">
+                  <span class="legend-item"><span class="legend-dot done"></span> Completed</span>
+                  <span class="legend-item"><span class="legend-dot pending"></span> Pending</span>
+                </div>
+                <div id="streetMapStatus" class="street-map-status"></div>
+              </div>
+            </div>
+
+            <!-- Commercial Fields -->
+            <div id="commercialFields" class="form-section">
+              <h3 class="form-section-title">🏪 Commercial Details</h3>
+              <p class="form-section-desc">Set default address values to duplicate. The AI will detect category, unit number, and POI name.</p>
+              
+              <div class="form-row">
+                <div class="form-group half">
+                  <label for="commercialHouseNo">House No.</label>
+                  <input type="text" id="commercialHouseNo" placeholder="e.g., 3155">
+                </div>
+                <div class="form-group half">
+                  <label for="commercialPostcode">Postcode</label>
+                  <input type="text" id="commercialPostcode" placeholder="e.g., 129588">
+                </div>
+              </div>
+              
+              <div class="form-group">
+                <label for="commercialStreet">Street</label>
+                <input type="text" id="commercialStreet" placeholder="e.g., Commonwealth Ave W">
+              </div>
+              
+              <div class="form-group">
+                <label for="commercialBuilding">Building</label>
+                <input type="text" id="commercialBuilding" placeholder="e.g., Clementi Mall">
+              </div>
+
+              <div class="form-group">
+                <label for="commercialFloor">Floor</label>
+                <input type="text" id="commercialFloor" list="commercialFloorOptions" placeholder="Select or type floor (e.g., L1, B2)">
+                <datalist id="commercialFloorOptions">
+                  <option value="B4">B4</option>
+                  <option value="B3">B3</option>
+                  <option value="B2">B2</option>
+                  <option value="B1">B1</option>
+                  <option value="L1">L1</option>
+                  <option value="L2">L2</option>
+                  <option value="L3">L3</option>
+                  <option value="L4">L4</option>
+                  <option value="L5">L5</option>
+                  <option value="L6">L6</option>
+                  <option value="L7">L7</option>
+                  <option value="L8">L8</option>
+                  <option value="L9">L9</option>
+                  <option value="L10">L10</option>
+                  <option value="L11">L11</option>
+                  <option value="L12">L12</option>
+                  <option value="L13">L13</option>
+                  <option value="L14">L14</option>
+                  <option value="L15">L15</option>
+                  <option value="L16">L16</option>
+                  <option value="L17">L17</option>
+                  <option value="L18">L18</option>
+                  <option value="L19">L19</option>
+                  <option value="L20">L20</option>
+                </datalist>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-full">Create Project →</button>
+        </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- Project Menu Screen -->
+    <section id="projectMenuScreen" class="screen">
+      <div class="vision-app">
+        <div class="vision-topbar">
+          <button id="projectMenuBackBtn" class="icon-btn" title="Back to Home">⟵</button>
+          <div class="project-menu-header">
+            <h2 id="projectMenuTitle" class="view-title">Project</h2>
+            <span id="projectMenuSubtitle" class="project-menu-location">-</span>
+        </div>
+        </div>
+        <div class="project-menu-container">
+          <div class="project-menu-grid">
+            <button id="projectScanBtn" type="button" class="project-menu-tile primary">
+              <div class="tile-icon">📷</div>
+              <div class="tile-info">
+                <span class="tile-title">Scan</span>
+                <span class="tile-desc">Capture storefronts with AI</span>
+              </div>
+            </button>
+            
+            <button id="projectDataBtn" type="button" class="project-menu-tile">
+              <div class="tile-icon">📋</div>
+              <div class="tile-info">
+                <span class="tile-title">Data</span>
+                <span class="tile-desc">View scanned records</span>
+          </div>
+            </button>
+            
+            <button id="projectBulkBtn" type="button" class="project-menu-tile">
+              <div class="tile-icon">📤</div>
+              <div class="tile-info">
+                <span class="tile-title">Bulk Upload</span>
+                <span class="tile-desc">Upload multiple images</span>
+          </div>
+            </button>
+
+            <button id="projectMapBtn" type="button" class="project-menu-tile">
+              <div class="tile-icon">🗺️</div>
+              <div class="tile-info">
+                <span class="tile-title">Progress Map</span>
+                <span class="tile-desc">View progress on map</span>
+          </div>
+            </button>
+          </div>
+
+          <div class="project-info-card">
+            <div id="projectInfoStandard" class="project-info-standard">
+              <div class="project-info-row">
+                <span class="project-info-label">Country:</span>
+                <span id="projectInfoCountry" class="project-info-value">-</span>
+              </div>
+              <div class="project-info-row">
+                <span class="project-info-label">Date:</span>
+                <span id="projectInfoDate" class="project-info-value">-</span>
+              </div>
+              <div class="project-info-row">
+                <span class="project-info-label">Email:</span>
+                <span id="projectInfoEmail" class="project-info-value">-</span>
+              </div>
+              <div class="project-info-row">
+                <span class="project-info-label">Sync:</span>
+                <span id="projectInfoSync" class="project-info-value">-</span>
+              </div>
+              <div class="project-info-row">
+                <span class="project-info-label">Floor:</span>
+                <span id="projectInfoFloor" class="project-info-value">-</span>
+              </div>
+              <div class="project-info-row">
+                <span class="project-info-label">Records:</span>
+                <span id="projectInfoRecords" class="project-info-value">0</span>
+              </div>
+            </div>
+            <div id="projectInfoVision" class="project-info-vision hidden">
+              <div class="vision-everything-text">Vision everything</div>
+          </div>
+        </div>
+
+          <button id="projectSettingsBtn" class="btn-secondary">⚙️ Project Settings</button>
+          </div>
+      </div>
+    </section>
+
+    <!-- Scan Type Selection Screen (Map Your City Lite) -->
+    <section id="scanTypeSelectionScreen" class="screen">
+      <div class="vision-app">
+        <div class="vision-topbar">
+          <button id="scanTypeBackBtn" class="icon-btn" title="Back">⟵</button>
+          <h2 class="view-title">Scan with AI</h2>
+        </div>
+        <div class="scan-type-container">
+          <p class="scan-type-subtitle">Select the type of data you want to scan</p>
+          
+          <div class="scan-type-section">
+            <h3 class="scan-type-subheader">Identify</h3>
+            <p class="scan-type-description">This is for AI to identify whatever the user faces the camera on</p>
+          </div>
+
+          <div class="scan-type-section">
+            <h3 class="scan-type-subheader">POI</h3>
+            <div class="scan-type-list">
+              <div class="scan-type-item disabled">Storefront</div>
+              <div class="scan-type-item disabled">Shophouse</div>
+              <div class="scan-type-item disabled">Residential</div>
+              <div class="scan-type-item disabled">Landmark</div>
+              <div class="scan-type-item disabled">New/Change/Renovation</div>
+            </div>
+          </div>
+
+          <div class="scan-type-section">
+            <h3 class="scan-type-subheader">Motorist</h3>
+            <div class="scan-type-list">
+              <div class="scan-type-item disabled">Carpark Rates</div>
+            </div>
+          </div>
+
+          <div class="scan-type-section">
+            <h3 class="scan-type-subheader">Public Transport</h3>
+            <div class="scan-type-list">
+              <div class="scan-type-item disabled">Bus/MRT Timing</div>
+              <div class="scan-type-item disabled">Bus/Train Rates</div>
+              <div class="scan-type-item disabled">Shuttle bus timing</div>
+            </div>
+          </div>
+
+          <div class="scan-type-section">
+            <h3 class="scan-type-subheader">Others</h3>
+            <div class="scan-type-list">
+              <div class="scan-type-item disabled">Directory</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Progress Dashboard Screen (Option B) -->
+    <section id="progressDashboardScreen" class="screen">
+      <div class="vision-app">
+        <div class="vision-topbar">
+          <button id="progressDashboardBackBtn" class="icon-btn" title="Back">⟵</button>
+          <h2 class="view-title">Progress Dashboard</h2>
+        </div>
+        <div class="progress-dashboard-container">
+          <!-- Summary Stats -->
+          <div class="progress-stats-bar">
+            <div class="stat-item">
+              <span class="stat-value" id="dashboardTotalLocations">0</span>
+              <span class="stat-label">Locations</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value" id="dashboardCompleted">0</span>
+              <span class="stat-label">Completed</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value" id="dashboardInProgress">0</span>
+              <span class="stat-label">In Progress</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value" id="dashboardPending">0</span>
+              <span class="stat-label">Pending</span>
+            </div>
+          </div>
+          
+          <!-- Full-screen Map -->
+          <div id="progressDashboardMap" class="progress-dashboard-map">
+            <!-- Loading Indicator -->
+            <div id="mapLoadingIndicator" class="map-loading-indicator hidden">
+              <div class="loading-spinner"></div>
+              <div class="loading-text">Loading map data...</div>
+            </div>
+          </div>
+          
+          <!-- Live Location Indicator -->
+          <div id="liveLocationIndicator" class="live-location-indicator hidden">
+            <div class="live-location-header">
+              <span class="live-location-icon">📍</span>
+              <span class="live-location-title">Your Location</span>
+              <button id="collapseLiveLocationBtn" class="live-location-collapse" title="Collapse/Expand">▼</button>
+              <button id="toggleLiveLocationBtn" class="live-location-toggle" title="Toggle GPS">🎯</button>
+            </div>
+            <div class="live-location-content">
+              <div class="live-location-field">
+                <span class="field-label">House No:</span>
+                <span id="liveLocationHouseNo" class="field-value">-</span>
+              </div>
+              <div class="live-location-field">
+                <span class="field-label">Street:</span>
+                <span id="liveLocationStreet" class="field-value">-</span>
+              </div>
+              <div class="live-location-field">
+                <span class="field-label">Postcode:</span>
+                <span id="liveLocationPostcode" class="field-value">-</span>
+              </div>
+              <div class="live-location-field">
+                <span class="field-label">Lat/Long:</span>
+                <span id="liveLocationCoords" class="field-value">-</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Location Details Panel (slides up when location is clicked) -->
+          <div id="locationDetailsPanel" class="location-details-panel hidden">
+            <div class="panel-header">
+              <h3 id="locationDetailName">Location Name</h3>
+              <button id="closeLocationDetails" class="icon-btn">✕</button>
+            </div>
+            <div class="panel-content">
+              <div class="detail-row">
+                <span class="detail-label">Status:</span>
+                <span id="locationDetailStatus" class="detail-value status-badge">-</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Progress:</span>
+                <span id="locationDetailProgress" class="detail-value">0 / 0</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Address:</span>
+                <span id="locationDetailAddress" class="detail-value">-</span>
+              </div>
+              <div class="panel-actions">
+                <button id="openLocationProject" class="btn btn-primary">Open Project</button>
+                <button id="startLocationScan" class="btn btn-secondary">Start Scanning</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- Version History Screen -->
@@ -60,8 +1141,250 @@
             
             <div class="version-block">
               <div class="version-header">
-                <h3>2.0.0 — Meatmen Revamp</h3>
+                <h3>2.4.2 — Multi-Country Support & UI Enhancements</h3>
                 <span class="version-badge current">Current</span>
+              </div>
+              <div class="version-section">
+                <h4>Major Features</h4>
+                <ul>
+                  <li><strong>Multi-Country Support:</strong> Added country selector dropdown in "Create a new tab" interface with support for Singapore, Thailand, Malaysia, Indonesia, Vietnam, Philippines, Cambodia, and Myanmar</li>
+                  <li><strong>Country-Specific Google Sheets:</strong> Projects now sync to country-specific Google Sheets (Thailand uses separate sheet ID: 1eyXm4DUNxmvK5ngutQJKq1QsKdSxiCYGSwGuZ-zdwjw)</li>
+                  <li><strong>Email Persistence:</strong> Email input now uses text field with autocomplete from previously used emails, stored in localStorage for future use</li>
+                  <li><strong>Country Display:</strong> Added Country field to project settings display (Country, Date, Email, Sync, Floor, Records)</li>
+                  <li><strong>Enhanced Project Names:</strong> Project names now include country in format: "Tab/Location Name, Floor, Date, Country"</li>
+                  <li><strong>Feedback Contact Field:</strong> Added optional Email/Slack ID input field to feedback form for better user support</li>
+                </ul>
+              </div>
+              <div class="version-section">
+                <h4>UI/UX Improvements</h4>
+                <ul>
+                  <li><strong>Default Category:</strong> Changed default category from Residential to Commercial for new tab creation</li>
+                  <li><strong>Commercial Fields Cleanup:</strong> Removed "(Optional)" labels from all Commercial detail fields (House No., Street, Building, Postcode, Floor)</li>
+                  <li><strong>Project Type Menu Reordering:</strong> Reordered project type menu: "Create a new tab" first, followed by "Select from existing building - Singapore", "Scan with OneMap - Singapore", then "Bulk Upload - WIP"</li>
+                  <li><strong>Visionary Rename:</strong> Renamed "Visionary" to "Visionary - Singapore" for clarity</li>
+                  <li><strong>Home Screen Project Info:</strong> Updated to show country in format: "Location | Floor | Date | Country"</li>
+                </ul>
+              </div>
+              <div class="version-section">
+                <h4>Technical Improvements</h4>
+                <ul>
+                  <li>Added COUNTRY_SHEET_IDS mapping configuration for country-to-sheet ID management</li>
+                  <li>Updated sync functions (syncToGoogleSheets, fetchFromGoogleSheets, syncBatchToGoogleSheets) to support country-specific sheet IDs</li>
+                  <li>Enhanced createSheetTab() function to accept and use country-specific sheetId parameter</li>
+                  <li>Implemented email persistence system with localStorage storage (keeps last 20 emails)</li>
+                  <li>Updated project creation to automatically include country in project name generation</li>
+                  <li>Enhanced feedback submission backend to handle Email/Slack ID contact field</li>
+                  <li>Updated Google Sheets feedback headers to include "Email/Slack ID" column</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="version-block">
+              <div class="version-header">
+                <h3>2.4.1 — Project Settings & Folder Management Improvements</h3>
+              </div>
+              <div class="version-section">
+                <h4>Major Features</h4>
+                <ul>
+                  <li><strong>Edit Project Settings:</strong> Users can now edit project settings after creation, including date, email, environment, and default address (floor, building, etc.)</li>
+                  <li><strong>Bulk Delete Projects:</strong> Added ability to delete multiple selected projects at once from "See All Projects" screen</li>
+                  <li><strong>Tab Name Autocomplete:</strong> New tab name input now autocompletes from existing tabs in "Dashboard - Commercial" sheet, with ability to type custom names</li>
+                  <li><strong>Image Database Sorting:</strong> Added sort functionality (Latest First / Oldest First) to IndexedDB photo browser</li>
+                </ul>
+              </div>
+              <div class="version-section">
+                <h4>UI/UX Improvements</h4>
+                <ul>
+                  <li><strong>Project Name Wrapping:</strong> Project names in "See All Projects" now wrap instead of truncating for better readability</li>
+                  <li><strong>Folder Filtering:</strong> Projects in folders no longer appear in "All" view - they only show in their specific folder</li>
+                  <li><strong>Folder Layout:</strong> "Add Folder" and "Select" buttons moved to a new line below folder tabs for better organization</li>
+                  <li><strong>Floor Input Enhancement:</strong> Extended floor options from L10 to L20, and made floor input editable (users can type custom floor values)</li>
+                  <li><strong>Location Field Protection:</strong> Location field is now disabled when editing project settings to prevent accidental changes to sync tab</li>
+                </ul>
+              </div>
+              <div class="version-section">
+                <h4>Bug Fixes</h4>
+                <ul>
+                  <li>Fixed folder deletion - projects now correctly reappear in "All" when their folder is deleted</li>
+                  <li>Fixed project settings update to preserve location and sheetTab (prevents sync issues)</li>
+                </ul>
+              </div>
+              <div class="version-section">
+                <h4>Technical Improvements</h4>
+                <ul>
+                  <li>Enhanced project settings form with edit mode detection</li>
+                  <li>Improved folder management with proper filtering logic</li>
+                  <li>Added caching for tab name autocomplete (5-minute cache duration)</li>
+                  <li>Enhanced photo sorting algorithm with proper timestamp extraction</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="version-block">
+              <div class="version-header">
+                <h3>2.4.0 — Project Management & UI Enhancements</h3>
+              </div>
+              <div class="version-section">
+                <h4>Major Features</h4>
+                <ul>
+                  <li><strong>Multi-Select Projects:</strong> Added selection mode to "See All Projects" allowing users to select multiple projects and move them to folders in bulk</li>
+                  <li><strong>Isolated Bulk Upload:</strong> New standalone bulk upload feature accessible from Building Selection with separate settings and data view</li>
+                  <li><strong>Live GPS Tracking:</strong> Added live location pin on Progress Map with real-time address display (house no, street, postcode, lat/long) using OneMap reverse geocoding</li>
+                  <li><strong>Folder Management:</strong> Enhanced folder system with ability to create, rename, move projects to folders, and delete folders</li>
+                </ul>
+              </div>
+              <div class="version-section">
+                <h4>UI/UX Improvements</h4>
+                <ul>
+                  <li><strong>Progress Map:</strong> Moved from home screen to Project Menu, replacing "Map" button</li>
+                  <li><strong>Project Display:</strong> Project names now wrap instead of truncating with ellipsis for better readability</li>
+                  <li><strong>Date Format:</strong> Changed from YYYY-MM-DD to DD-MM-YYYY format in project listings</li>
+                  <li><strong>Project Name Format:</strong> Now displays as "Name, Floor, Date" for better clarity</li>
+                  <li><strong>Live Location Indicator:</strong> Made collapsible to save screen space, with expand/collapse toggle</li>
+                  <li><strong>Project Type Screen:</strong> Made scrollable for mobile optimization with proper overflow handling</li>
+                  <li><strong>Loading Indicators:</strong> Added loading spinner and status text when Progress Map is loading data</li>
+                </ul>
+              </div>
+              <div class="version-section">
+                <h4>Feature Updates</h4>
+                <ul>
+                  <li><strong>Scan with OneMap:</strong> Renamed "Condo Scan" to "Scan with OneMap" with updated description</li>
+                  <li><strong>Project Type:</strong> Renamed "Building Selection" to "Project Type" for clarity</li>
+                  <li><strong>Navigation:</strong> Back button from projects now returns to "See All Projects" instead of home screen</li>
+                  <li><strong>Folder Organization:</strong> New folders appear at top of list, folder button moved to right side to avoid overlap</li>
+                  <li><strong>Project Actions:</strong> Added "Move to Folder" button on each project card for quick organization</li>
+                  <li><strong>Rename Projects:</strong> Added ability to rename projects for better visibility (doesn't affect data)</li>
+                </ul>
+              </div>
+              <div class="version-section">
+                <h4>Removed Features</h4>
+                <ul>
+                  <li>Removed street navigator from scanner</li>
+                  <li>Removed "Street Preview" section from New Tab Settings</li>
+                  <li>Removed annotated photo download button (kept only original download)</li>
+                </ul>
+              </div>
+              <div class="version-section">
+                <h4>Bug Fixes</h4>
+                <ul>
+                  <li>Fixed search function to work as user types (debounced 300ms) and search by store name only</li>
+                  <li>Fixed Progress Dashboard not showing content after moving to Project Menu</li>
+                  <li>Fixed project name displaying duplicate date</li>
+                  <li>Fixed form validation error for Commercial projects when creating new tab</li>
+                  <li>Fixed mobile download button visibility in portrait mode on display cards</li>
+                  <li>Fixed variable initialization errors (TDZ issues) by moving declarations to top</li>
+                  <li>Fixed folder button overlapping back button</li>
+                </ul>
+              </div>
+              <div class="version-section">
+                <h4>Technical Improvements</h4>
+                <ul>
+                  <li>Auto-zoom to user location when live GPS tracking is enabled (zooms once on first location update)</li>
+                  <li>Improved folder management with localStorage-based folder system</li>
+                  <li>Enhanced selection mode UI with checkboxes, selection toolbar, and visual feedback</li>
+                  <li>Added proper mobile scrolling support with -webkit-overflow-scrolling for iOS</li>
+                  <li>Improved form validation with conditional required fields based on project type</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="version-block">
+              <div class="version-header">
+                <h3>2.3.1 — Recovery Tool Enhancements</h3>
+              </div>
+              <div class="version-section">
+                <h4>Improvements</h4>
+                <ul>
+                  <li><strong>Recovery Tool:</strong> Added persistent localStorage size status display showing current usage and percentage of ~5MB limit</li>
+                  <li><strong>ELO Tracker:</strong> Updated modal title to "Authorization Needed" and password placeholder to "Enter password for access"</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="version-block">
+              <div class="version-header">
+                <h3>2.3.0 — Map Your City Lite and Visionary</h3>
+              </div>
+              <div class="version-section">
+                <h4>Major Features</h4>
+                <ul>
+                  <li><strong>Map Your City Lite Project Type:</strong> New project type for city mapping and data collection. Features simplified project creation (no settings required) and dedicated "Scan with AI" interface with data type selection (POI, Motorist, Public Transport, Others).</li>
+                  <li><strong>Visionary Integration:</strong> Added "Visionary" button on home screen to access Basement Carpark LiDAR Map application.</li>
+                  <li><strong>Feedback System:</strong> New feedback submission feature allowing users to submit feature requests, bug reports, performance issues, and other feedback directly to Google Sheets.</li>
+                  <li><strong>Storage Optimization:</strong> Removed thumbnails from localStorage (99% storage reduction), storing them in IndexedDB instead. Scans now use ~1.5KB instead of ~150KB, allowing ~3,300 scans instead of ~30.</li>
+                </ul>
+              </div>
+              <div class="version-section">
+                <h4>UI Improvements</h4>
+                <ul>
+                  <li>Reduced button sizes for User Guide, Recovery Tool, and Image Database buttons</li>
+                  <li>Updated Current Project display: Onground Benchmarking shows "Location | Floor | Date", Map Your City Lite shows "Date"</li>
+                  <li>Updated descriptions: Visionary ("Vision everything"), Create New Project ("Start a new Vision project"), Map Your City Lite ("Visionise your world")</li>
+                  <li>Map Your City Lite project menu: Subtitle shows "Visionise your world", all tabs show "WIP", info card displays centered "Vision everything" text</li>
+                  <li>Improved project type selection with radio-style behavior (only one selected at a time)</li>
+                  <li>Enhanced scan type selection screen with organized subheaders (Identify, POI, Motorist, Public Transport, Others)</li>
+                </ul>
+              </div>
+              <div class="version-section">
+                <h4>Fixes & Improvements</h4>
+                <ul>
+                  <li>Fixed unit number autofill for basement levels (B1/B2/B3/B4 now use #B1-/#B2-/#B3-/#B4- format)</li>
+                  <li>Fixed IndexedDB version compatibility issue in tools/browse-indexeddb.html</li>
+                  <li>Fixed project menu button states based on project type</li>
+                  <li>Fixed location dropdown population in project settings</li>
+                  <li>Fixed app refresh issue when opening projects</li>
+                  <li>Improved error handling and storage quota detection</li>
+                  <li>Added automatic migration to remove photoData from existing scans</li>
+                  <li>Enhanced thumbnail loading with on-demand IndexedDB retrieval</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="version-block">
+              <div class="version-header">
+                <h3>2.1.0 — Image Management & UI Enhancements</h3>
+              </div>
+              <div class="version-section">
+                <h4>Major Features</h4>
+                <ul>
+                  <li><strong>Enhanced Image File Naming:</strong> Images now use <code>Floor_Building_EntryID</code> format (e.g., <code>L1_ION_ORCHARD_entry-1234567890-abc123def.jpg</code>) for better organization. Falls back to <code>EntryID.jpg</code> if floor/building data is unavailable.</li>
+                  <li><strong>Recursive Google Drive Search:</strong> Google Apps Script now searches recursively through all subfolders in your Drive folder, allowing flexible image organization (e.g., Storefront Images > Orchard Grid > ION Orchard > L1).</li>
+                  <li><strong>Project Settings Email Dropdown:</strong> Email field in project settings is now a dropdown with predefined team email addresses for easier selection.</li>
+                  <li><strong>iOS Safari Optimization:</strong> Improved camera view for iOS Safari with better landscape mode support and optimized preview popup sizing.</li>
+                </ul>
+              </div>
+              <div class="version-section">
+                <h4>UI Improvements</h4>
+                <ul>
+                  <li>Reduced header/topbar size for more content space</li>
+                  <li>Removed camera border for cleaner view</li>
+                  <li>Optimized button sizes and spacing in Data tab</li>
+                  <li>Made Download button slightly wider than Export and Sync buttons</li>
+                  <li>Removed emojis from action buttons for cleaner look</li>
+                  <li>Reduced preview popup size for better mobile experience</li>
+                  <li>Made preview popup scrollable when expanded (phone/website fields)</li>
+                  <li>Improved scan button positioning in landscape mode</li>
+                  <li>Added proper spacing between toolbar buttons and search bar</li>
+                </ul>
+              </div>
+              <div class="version-section">
+                <h4>Fixes & Improvements</h4>
+                <ul>
+                  <li>Fixed image filename generation to use project settings defaults (Floor/Building) with "Unknown" fallback</li>
+                  <li>Fixed scanning process getting stuck during image analysis</li>
+                  <li>Fixed button text overflow issues</li>
+                  <li>Improved mobile card display - Phone, Website, and Remarks are now display-only (editable via Edit button only)</li>
+                  <li>Reduced "+" button size in preview popup</li>
+                  <li>Removed shortcut buttons as requested</li>
+                  <li>Updated Google Apps Script with improved recursive search function</li>
+                  <li>Fixed Apps Script duplicate declaration error handling</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="version-block">
+              <div class="version-header">
+                <h3>2.0.0 — Meatmen Revamp</h3>
               </div>
               <div class="version-section">
                 <h4>Major Changes</h4>
@@ -236,7 +1559,14 @@
                   <div class="step-number">4</div>
                   <div class="step-content">
                     <h4>Review Results</h4>
-                    <p>After scanning, a banner notification will appear showing a preview. Tap the banner to view the full entry in Records, or it will auto-dismiss after 5 seconds.</p>
+                    <p>After scanning, a preview popup will appear showing the extracted information. You can:</p>
+                    <ul style="margin-left: 20px; margin-top: 8px;">
+                      <li>Tap the "+" button to add Phone Number, Website, or Remarks</li>
+                      <li>Tap "Accept" to save the scan</li>
+                      <li>Tap "Reject" to discard the scan</li>
+                      <li>Tap "🕐 Scan Opening Hours" to extract opening hours from the image</li>
+                    </ul>
+                    <p style="margin-top: 8px;">The popup is scrollable if content expands beyond the screen.</p>
                   </div>
                 </div>
                 
@@ -303,15 +1633,31 @@
                   <div class="step-number">6</div>
                   <div class="step-content">
                     <h4>Download Photos</h4>
-                    <p>Tap "Download Photos" to download all storefront images as a ZIP file. Photos are named with their store names for easy identification.</p>
+                    <p>Tap "Download" to download all storefront images as a ZIP file. Photos are named using the format <code>Floor_Building_EntryID.jpg</code> (e.g., <code>L1_ION_ORCHARD_entry-1234567890-abc123def.jpg</code>) for easy organization. If floor/building data is not available, filenames will be <code>EntryID.jpg</code>.</p>
                   </div>
                 </div>
                 
                 <div class="guide-step">
                   <div class="step-number">7</div>
                   <div class="step-content">
+                    <h4>Sync to Google Sheets</h4>
+                    <p>Tap "Sync" to sync all records to Google Sheets. This requires Google Sheets sync to be enabled in project settings. Data will be synced to the sheet tab matching your project location.</p>
+                  </div>
+                </div>
+                
+                <div class="guide-step">
+                  <div class="step-number">8</div>
+                  <div class="step-content">
                     <h4>Clear All Records</h4>
                     <p>Tap "Clear" to delete all records at once. You'll be asked to confirm before all data is permanently removed.</p>
+                  </div>
+                </div>
+                
+                <div class="guide-step">
+                  <div class="step-number">9</div>
+                  <div class="step-content">
+                    <h4>Mobile Card View</h4>
+                    <p>On mobile devices, records are displayed as cards instead of a table. Phone, Website, and Remarks fields are display-only in the card view. To edit these fields, tap the "Edit" button on the card.</p>
                   </div>
                 </div>
               </div>
@@ -379,6 +1725,54 @@
                 <span class="tip-icon">💡</span>
                 <div class="tip-content">
                   <strong>Tip:</strong> Batch Upload is separate from Records. Use it for bulk processing, then export the results. Your main scanning Records remain untouched.
+                </div>
+              </div>
+            </div>
+
+            <!-- Project Management Guide -->
+            <div class="guide-section">
+              <div class="guide-header">
+                <span class="guide-icon">📁</span>
+                <h3>Project Management</h3>
+              </div>
+              <p class="guide-intro">Organize your scanning work into projects with custom settings.</p>
+              
+              <div class="guide-steps">
+                <div class="guide-step">
+                  <div class="step-number">1</div>
+                  <div class="step-content">
+                    <h4>Create a Project</h4>
+                    <p>From the home screen, tap "Create Project". Fill in:</p>
+                    <ul style="margin-left: 20px; margin-top: 8px;">
+                      <li><strong>Date:</strong> Project date (defaults to today)</li>
+                      <li><strong>Email:</strong> Select from dropdown (team email addresses)</li>
+                      <li><strong>Location:</strong> Choose from predefined locations (e.g., ION Orchard, Wisma Atria)</li>
+                      <li><strong>Environment:</strong> Indoor or Outdoor</li>
+                      <li><strong>Default Address:</strong> Optional - set default Floor, Building, Street, House No., and Postcode for all scans in this project</li>
+                    </ul>
+                  </div>
+                </div>
+                
+                <div class="guide-step">
+                  <div class="step-number">2</div>
+                  <div class="step-content">
+                    <h4>Image File Naming</h4>
+                    <p>Images are automatically named using the format <code>Floor_Building_EntryID.jpg</code> (e.g., <code>L1_ION_ORCHARD_entry-1234567890-abc123def.jpg</code>). The Floor and Building values come from:</p>
+                    <ul style="margin-left: 20px; margin-top: 8px;">
+                      <li>Project settings default address (if set)</li>
+                      <li>Extracted from scan data (if available)</li>
+                      <li>"Unknown" if neither is available</li>
+                    </ul>
+                    <p style="margin-top: 8px;">This naming format makes it easy to organize images into folders by floor and building after export.</p>
+                  </div>
+                </div>
+                
+                <div class="guide-step">
+                  <div class="step-number">3</div>
+                  <div class="step-content">
+                    <h4>Google Sheets Sync</h4>
+                    <p>Enable "Sync to Google Sheets" in project settings to automatically sync scan data. Data will be synced to a sheet tab matching your project location name. Images can be linked later using Google Apps Script (see Image Management Guide).</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -582,37 +1976,65 @@
       </div>
     </section>
 
-    <!-- Vision Menu Screen -->
-    <section id="visionMenu" class="screen">
-      <div class="vision-menu-header">
-        <button id="homeBackBtn" class="icon-btn" title="Back to home">⟵</button>
-        <div class="vision-menu-title">
-          <h1>beefnoodlesoup<span class="vision-suffix">Vision</span></h1>
+    <!-- ELO Tracker Screen -->
+    <section id="eloTrackerScreen" class="screen">
+      <div class="vision-app">
+        <div class="vision-topbar">
+          <button id="eloTrackerBackBtn" class="icon-btn" title="Back">⟵</button>
+          <h2 class="view-title">ELO Score Tracker</h2>
         </div>
+        <section class="vision-view active">
+          <div class="elo-tracker-container">
+            <!-- Leaderboard Section -->
+            <div class="elo-leaderboard-section">
+              <h3 class="elo-section-title">Current Rankings</h3>
+              <div id="eloLeaderboard" class="elo-leaderboard">
+                <!-- Leaderboard will be populated by JS -->
       </div>
-      <div class="vision-menu-grid">
-        <button class="vision-menu-tile" data-vision-target="data">
-          <div class="tile-icon">📋</div>
-          <span>Records</span>
-        </button>
-        <button class="vision-menu-tile" data-vision-target="batch">
-          <div class="tile-icon">📤</div>
-          <span>Batch Upload</span>
-        </button>
-        <button class="vision-menu-tile" data-vision-target="map">
-          <div class="tile-icon">🗺️</div>
-          <span>Map</span>
-        </button>
-        <button class="vision-menu-tile" data-vision-target="guide">
-          <div class="tile-icon">📖</div>
-          <span>Guide</span>
-        </button>
       </div>
-      <div class="vision-scan-action">
-        <button id="startScanningBtn" class="start-scanning-btn">
-          <span class="scan-icon">📷</span>
-          <span class="scan-text">Start Scanning</span>
-        </button>
+
+            <!-- Match Input Section -->
+            <div class="elo-match-section">
+              <h3 class="elo-section-title">Record Match</h3>
+              <form id="eloMatchForm" class="elo-match-form">
+                <div class="form-group">
+                  <label for="eloMatchType">Match Type</label>
+                  <select id="eloMatchType" required>
+                    <option value="">Select match type...</option>
+                    <option value="1v1">1v1</option>
+                    <option value="2v2">2v2</option>
+                  </select>
+                </div>
+
+                <div id="eloPlayerSelection" class="elo-player-selection">
+                  <!-- Player selection will be populated by JS -->
+                </div>
+
+                <div id="eloTeamSelection" class="elo-team-selection hidden">
+                  <!-- Team selection for 2v2 will be populated by JS -->
+                </div>
+
+                <div class="form-group">
+                  <label for="eloWinningTeam">Winning Team</label>
+                  <select id="eloWinningTeam" required disabled>
+                    <option value="">Select winning team...</option>
+                  </select>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-full">Record Match</button>
+              </form>
+            </div>
+
+            <!-- Match History Section -->
+            <div class="elo-history-section">
+              <h3 class="elo-section-title">Match History</h3>
+              <div id="eloMatchHistory" class="elo-match-history">
+                <!-- Match history will be populated by JS -->
+              </div>
+            </div>
+
+          </div>
+        </section>
       </div>
     </section>
 
@@ -631,29 +2053,29 @@
               <p class="upload-hint">Upload multiple storefront images at once</p>
             </div>
             <div id="batchStatus" class="muted"></div>
-            <div class="table-container">
-              <table id="batchResultsTable">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Photo</th>
-                    <th>POI Name</th>
-                    <th>Lat-Long</th>
-                    <th>House_No</th>
-                    <th>Street</th>
-                    <th>Unit</th>
-                    <th>Building</th>
-                    <th>Postcode</th>
-                    <th>Remarks</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
+            
+            <!-- Progress Indicator -->
+            <div id="batchProgressContainer" class="batch-progress-container hidden">
+              <div class="batch-progress-header">
+                <span id="batchProgressText">Processing...</span>
+                <span id="batchProgressTime">Estimating time...</span>
+              </div>
+              <div class="batch-progress-bar-wrapper">
+                <div id="batchProgressBar" class="batch-progress-bar">
+                  <div id="batchProgressFill" class="batch-progress-fill"></div>
+                </div>
+                <div id="batchProgressPercent" class="batch-progress-percent">0%</div>
+              </div>
+              <div id="batchProgressDetails" class="batch-progress-details">
+                <span id="batchProgressCurrent">0</span> / <span id="batchProgressTotal">0</span> photos processed
+              </div>
+            </div>
+            
+            <div id="batchCardsContainer" class="batch-cards-container">
+              <!-- Batch upload cards will be rendered here -->
             </div>
             <div class="toolbar">
-              <button id="batchExportBtn" class="btn">Export</button>
-              <button id="batchDownloadPhotosBtn" class="btn">Download Photos</button>
+              <button id="batchSaveBtn" class="btn sync-btn">Save to Records</button>
               <button id="batchClearBtn" class="btn">Clear</button>
             </div>
           </div>
@@ -667,10 +2089,53 @@
         <div class="vision-topbar">
           <button id="visionMenuBackBtn" class="icon-btn" title="Back">⟵</button>
           <h2 class="view-title" id="currentViewTitle">Records</h2>
+          <button id="cameraSettingsBtn" class="icon-btn camera-settings-btn" title="Camera Settings" style="display: none;">⚙️</button>
+        </div>
+
+        <!-- Camera Settings Modal -->
+        <div id="cameraSettingsModal" class="modal" style="display: none;">
+          <div class="modal-content camera-settings-content">
+            <div class="modal-header">
+              <h3>Camera Size Settings</h3>
+              <button class="modal-close" id="closeCameraSettings">✕</button>
+            </div>
+            <div class="modal-body">
+              <div class="setting-group">
+                <label for="cameraSizeSlider">Camera Frame Size</label>
+                <div class="slider-container">
+                  <input type="range" id="cameraSizeSlider" min="30" max="90" value="60" step="5">
+                  <span id="cameraSizeValue">60%</span>
+                </div>
+                <div class="size-presets">
+                  <button class="preset-btn" data-size="40">Small</button>
+                  <button class="preset-btn" data-size="60">Medium</button>
+                  <button class="preset-btn" data-size="80">Large</button>
+                  <button class="preset-btn" data-size="95">Full</button>
+                </div>
+              </div>
+              <div class="setting-group">
+                <label for="cameraWidthSlider">Camera Frame Width</label>
+                <div class="slider-container">
+                  <input type="range" id="cameraWidthSlider" min="70" max="100" value="95" step="5">
+                  <span id="cameraWidthValue">95%</span>
+                </div>
+              </div>
+              <div class="setting-group">
+                <label>
+                  <input type="checkbox" id="cameraMaintainAspectRatio" checked>
+                  Maintain Aspect Ratio (4:3)
+                </label>
+              </div>
+              <div class="setting-actions">
+                <button id="resetCameraSettings" class="btn btn-secondary">Reset to Default</button>
+                <button id="applyCameraSettings" class="btn btn-primary">Apply</button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <section id="cameraView" class="vision-view" data-view="camera">
-    <div class="video-wrapper">
+    <div class="video-wrapper" id="videoWrapper">
       <video id="camera" autoplay playsinline></video>
       <div id="progressBar"><div id="progressFill"></div></div>
       <div id="status" class="muted camera-status"></div>
@@ -685,6 +2150,52 @@
         <button id="zoomIn" class="zoom-btn" title="Zoom In">+</button>
         <button id="zoomReset" class="zoom-reset-btn" title="Reset Zoom">⌂</button>
       </div>
+
+      <!-- Street Navigator (Enhanced Field Navigation) -->
+      <div id="streetNavContainer" class="street-nav-container hidden">
+        <div class="street-nav-header">
+          <div class="street-nav-info">
+            <span class="street-nav-icon">🏠</span>
+            <span id="streetNavName" class="street-nav-name">Street Name</span>
+          </div>
+          <div class="street-nav-progress">
+            <span id="streetNavProgress" class="street-nav-progress-text">0/0</span>
+            <button id="toggleStreetNav" class="street-nav-toggle" title="Toggle panel">▼</button>
+          </div>
+        </div>
+        <div id="streetNavContent" class="street-nav-content">
+          <!-- Quick Number Selector -->
+          <div class="street-nav-numbers">
+            <div class="numbers-header">
+              <span class="numbers-label">Tap house # to select before scanning:</span>
+              <button id="refreshStreetData" class="numbers-refresh" title="Refresh">🔄</button>
+            </div>
+            <div id="streetNavNumbersList" class="numbers-list">
+              <!-- House number buttons will be populated here -->
+            </div>
+          </div>
+          <!-- Mini Map -->
+          <div class="street-nav-map-section">
+            <div id="streetNavMap" class="street-nav-map"></div>
+          </div>
+          <!-- Stats -->
+          <div class="street-nav-stats">
+            <div class="nav-stat-item done">
+              <span id="streetNavCompleted" class="stat-value">0</span>
+              <span class="stat-label">Done</span>
+            </div>
+            <div class="nav-stat-item pending">
+              <span id="streetNavPending" class="stat-value">0</span>
+              <span class="stat-label">Left</span>
+            </div>
+            <div class="nav-stat-item total">
+              <span id="streetNavTotal" class="stat-value">0</span>
+              <span class="stat-label">Total</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
       
       <div id="scanningOverlay" class="scanning-overlay">
         <div class="scanning-content">
@@ -699,7 +2210,8 @@
           <div class="card">
             <div class="toolbar">
               <button id="exportBtn" class="btn">Export</button>
-              <button id="downloadAllPhotosBtn" class="btn">Download Photos</button>
+              <button id="downloadAllPhotosBtn" class="btn download-btn">Download</button>
+              <button id="syncAllSheetsBtn" class="btn sync-btn" title="Sync all records to Google Sheets">Sync</button>
             </div>
             <div class="search-toolbar">
               <input type="text" id="storeSearchInput" placeholder="Search for store name in table..." />
@@ -711,21 +2223,30 @@
                 <thead>
                   <tr>
                     <th>#</th>
+                    <th>Sync</th>
                     <th>Photo</th>
+                    <th>In/Out</th>
+                    <th>Category</th>
                     <th>POI Name</th>
                     <th>Lat-Long</th>
                     <th>House_No</th>
                     <th>Street</th>
                     <th>Unit</th>
+                    <th>Floor</th>
                     <th>Building</th>
                     <th>Postcode</th>
+                    <th>Opening Hours</th>
+                    <th>Phone</th>
+                    <th>Website</th>
                     <th>Remarks</th>
+                    <th>Drive</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody></tbody>
               </table>
             </div>
+            <div class="mobile-cards-container" id="mobileCardsContainer"></div>
           </div>
         </section>
 
@@ -787,7 +2308,77 @@
   <!-- HEIC conversion library -->
   <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
 
+  <!-- ELO Tracker Password Modal -->
+  <div id="eloPasswordModal" class="modal hidden">
+    <div class="modal-content feedback-modal">
+      <div class="modal-header">
+        <h2>Authorization Needed</h2>
+        <button id="eloPasswordCloseBtn" class="icon-btn-small">✕</button>
+      </div>
+      <form id="eloPasswordForm" class="feedback-form">
+        <div class="form-group">
+          <label for="eloPassword">Enter Password</label>
+          <input type="password" id="eloPassword" required placeholder="Enter password for access" autofocus>
+        </div>
+        <div id="eloPasswordError" class="elo-password-error hidden"></div>
+        <div class="modal-actions">
+          <button type="button" id="eloPasswordCancelBtn" class="btn btn-secondary">Cancel</button>
+          <button type="submit" class="btn btn-primary">Enter</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Feedback Modal -->
+  <div id="feedbackModal" class="modal hidden">
+    <div class="modal-content feedback-modal">
+      <div class="modal-header">
+        <h2>Send Feedback</h2>
+        <button id="feedbackCloseBtn" class="icon-btn-small">✕</button>
+      </div>
+      <form id="feedbackForm" class="feedback-form">
+        <div class="form-group">
+          <label for="feedbackType">Feedback Type *</label>
+          <select id="feedbackType" required>
+            <option value="">Select type...</option>
+            <option value="Feature request">Feature request</option>
+            <option value="Bug report">Bug report</option>
+            <option value="Performance">Performance</option>
+            <option value="Others">Others</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="feedbackDevice">Device *</label>
+          <select id="feedbackDevice" required>
+            <option value="">Select device...</option>
+            <option value="iOS">iOS</option>
+            <option value="Android">Android</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="feedbackContact">Email / Slack ID</label>
+          <input type="text" id="feedbackContact" placeholder="Enter your email or Slack ID (optional)">
+        </div>
+        <div class="form-group">
+          <label for="feedbackText">Your Feedback *</label>
+          <textarea id="feedbackText" rows="5" required placeholder="Share your thoughts, report issues, or suggest improvements..."></textarea>
+        </div>
+        <div class="modal-actions">
+          <button type="button" id="feedbackCancelBtn" class="btn btn-secondary">Cancel</button>
+          <button type="submit" class="btn btn-primary">Submit Feedback</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ELO Tracker Styles -->
+  <link rel="stylesheet" href="features/elo-tracker/elo-tracker.css">
+
+  <!-- EXIF Library for GPS extraction from photos -->
+  <script src="https://cdn.jsdelivr.net/npm/exif-js@2.3.0/exif.js"></script>
+
   <!-- App logic (ESM) -->
   <script type="module" src="script.js"></script>
+  <script type="module" src="features/elo-tracker/elo-tracker.js"></script>
 </body>
 </html> 
